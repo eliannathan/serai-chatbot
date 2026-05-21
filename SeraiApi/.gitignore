@@ -1,0 +1,17 @@
+# ASP.NET build artifacts
+**/bin/
+**/obj/
+.vs/
+
+# Node
+node_modules/
+dist/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db

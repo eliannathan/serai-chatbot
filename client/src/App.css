@@ -1,0 +1,192 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0ede8;
+  min-height: 100vh;
+}
+
+.chat-wrapper {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.chat-bubble {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #4a7c59;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+.chat-bubble:hover { background: #3d6b4a; transform: scale(1.05); }
+
+.resize-wrapper {
+  position: relative;
+  width: 360px;
+  height: 480px;
+  min-width: 280px;
+  min-height: 350px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.rh {
+  position: absolute;
+  z-index: 10;
+}
+
+/* Edges */
+.rh-n { top: -4px; left: 12px; right: 12px; height: 8px; cursor: n-resize; }
+.rh-s { bottom: -4px; left: 12px; right: 12px; height: 8px; cursor: s-resize; }
+.rh-w { left: -4px; top: 12px; bottom: 12px; width: 8px; cursor: w-resize; }
+.rh-e { right: -4px; top: 12px; bottom: 12px; width: 8px; cursor: e-resize; }
+
+/* Corners */
+.rh-nw { top: -4px; left: -4px; width: 16px; height: 16px; cursor: nw-resize; }
+.rh-ne { top: -4px; right: -4px; width: 16px; height: 16px; cursor: ne-resize; }
+.rh-sw { bottom: -4px; left: -4px; width: 16px; height: 16px; cursor: sw-resize; }
+.rh-se { bottom: -4px; right: -4px; width: 16px; height: 16px; cursor: se-resize; }
+
+.chat-window {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  background: #4a7c59;
+  color: white;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info { display: flex; align-items: center; gap: 12px; }
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.bot-name { font-weight: 600; font-size: 15px; }
+.bot-status { font-size: 12px; opacity: 0.85; }
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.close-btn:hover { opacity: 1; }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message { display: flex; }
+.message.user { justify-content: flex-end; }
+.message.assistant { justify-content: flex-start; }
+
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.message.user .bubble {
+  background: #4a7c59;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.assistant .bubble {
+  background: #f0ede8;
+  color: #2c2c2c;
+  border-bottom-left-radius: 4px;
+}
+
+.typing { display: flex; gap: 4px; align-items: center; padding: 12px 16px; }
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4a7c59;
+  animation: bounce 1.2s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-8px); }
+}
+
+.chat-input {
+  padding: 12px 16px;
+  border-top: 1px solid #e8e4df;
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  background: #f9f7f5;
+  color: #2c2c2c;
+}
+
+.chat-input input:focus { border-color: #4a7c59; }
+
+.chat-input button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #4a7c59;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-input button:hover:not(:disabled) { background: #3d6b4a; }
+.chat-input button:disabled { background: #ccc; cursor: not-allowed; }
