@@ -79,7 +79,7 @@ app.MapPost("/chat", async (ChatRequest request) =>
 .WithName("Chat")
 .WithOpenApi();
 
-app.Urls.Add($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "5293"}");
+app.Urls.Add($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
 app.Run();
 
