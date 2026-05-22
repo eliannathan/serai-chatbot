@@ -1,0 +1,28 @@
+{
+  "name": "project1",
+  "version": "1.0.0",
+   "type": "module",
+  "description": "A custom AI-powered customer support chatbot built with ASP.NET Core and React. \r Deployed live as a demo for Serai Retreat, a fictional boutique eco-resort in Ubud, Bali.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eliannathan/serai-chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eliannathan/serai-chatbot/issues"
+  },
+  "homepage": "https://github.com/eliannathan/serai-chatbot#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^6.39.0"
+  }
+}
