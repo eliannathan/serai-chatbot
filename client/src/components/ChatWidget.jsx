@@ -30,7 +30,7 @@ export default function ChatWidget({ persona }) {
 
     For booking inquiries direct them to hello@serai.retreat. Never make up information you don't know.`
 
-    
+
   const [open, setOpen] = useState(false)
   const storageKey = `serai_chat_${persona?.id || 'visitor'}`
 
@@ -93,11 +93,10 @@ export default function ChatWidget({ persona }) {
     window.addEventListener('mouseup', onUp)
   }, [size])
 
-  async function sendMessage() {
-    const text = input.trim()
-    if (!text || loading) return
+  async function sendMessageWithText(text) {
+    if (!text.trim() || loading) return
 
-    const userMsg = { role: 'user', content: text }
+    const userMsg = { role: 'user', content: text.trim() }
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setInput('')
@@ -105,14 +104,12 @@ export default function ChatWidget({ persona }) {
 
     try {
       if (messages.length === 1) {
-        await supabase.from('leads').insert({ message: text, source: 'chat_widget' })
+        await supabase.from('leads').insert({ message: text.trim(), source: 'chat_widget' })
       }
 
       const apiMessages = newMessages
         .filter((_, i) => !(i === 0 && newMessages[0].role === 'assistant'))
         .map(m => ({ role: m.role, content: m.content }))
-
-      console.log('Sending to backend:', { persona, messageCount: apiMessages.length })
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -121,8 +118,6 @@ export default function ChatWidget({ persona }) {
       })
 
       const data = await res.json()
-      console.log('Backend response:', data)
-
       const reply = data.content?.[0]?.text || "I'm sorry, I couldn't process that. Please try again."
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
@@ -134,6 +129,10 @@ export default function ChatWidget({ persona }) {
     }
 
     setLoading(false)
+  }
+
+  function sendMessage() {
+    sendMessageWithText(input)
   }
 
   function handleKey(e) {
@@ -153,6 +152,28 @@ const handles = [
   { dir: 'se', style: { bottom: -6, right: -6, width: 24, height: 24, cursor: 'se-resize' } },
   { dir: 'sw', style: { bottom: -6, left: -6, width: 24, height: 24, cursor: 'sw-resize' } },
 ]
+
+const quickReplies = persona?.room
+  ? [
+      { label: '📋 View my booking', message: 'Can you pull up my booking details?' },
+      { label: '💆 Spa hours', message: 'What are the spa hours?' },
+      { label: '🍽️ Dining options', message: 'What dining options do you have?' },
+      { label: '📍 Things to do nearby', message: 'What are some local recommendations?' },
+    ]
+  : [
+      { label: '🛏️ View rooms', message: 'What rooms do you have available?' },
+      { label: '💰 Room prices', message: 'How much are the rooms?' },
+      { label: '🌿 Amenities', message: 'What amenities does the resort offer?' },
+      { label: '📅 How to book', message: 'How do I make a booking?' },
+    ]
+
+function handleQuickReply(message) {
+  setInput(message)
+  // Send immediately
+  setTimeout(() => {
+    sendMessageWithText(message)
+  }, 0)
+}
 
   return (
     <>
@@ -208,7 +229,22 @@ const handles = [
               )}
               <div ref={bottomRef} />
             </div>
-
+            {/* Quick replies — show only when conversation is short */}
+            {messages.length <= 2 && (
+              <div className="chat-quick-replies">
+                {quickReplies.map(qr => (
+                  <button
+                    key={qr.label}
+                    className="quick-reply-btn"
+                    onClick={() => handleQuickReply(qr.message)}
+                    disabled={loading}
+                  >
+                    {qr.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            
             <div className="chat-input-row">
               <textarea
                 value={input}
