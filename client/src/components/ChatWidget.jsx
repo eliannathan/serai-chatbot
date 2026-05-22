@@ -1,27 +1,50 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
 
-const SYSTEM_PROMPT = `You are Sari, the warm and knowledgeable concierge assistant for Serai Retreat — an intimate luxury retreat nestled in the rice terraces of Ubud, Bali.
-
-You help guests with:
-- Room information (Jungle Suite $120/night, Terrace Villa $220/night, Retreat Villa $380/night)
-- Booking inquiries and availability questions
-- Amenities: Balinese spa, farm-to-table dining, yoga pavilion, plunge pools, airport transfers
-- General questions about Ubud, Bali, travel tips, and what to expect at the retreat
-
-Your tone is: warm, calm, poetic but not over-the-top. You speak like a knowledgeable local host, not a corporate chatbot. Keep responses concise — 2-4 sentences max unless the guest asks for detail.
-
-When a guest asks about booking, direct them to contact hello@serai.retreat or visit the My Booking page for existing reservations.
-
-Never make up prices, policies, or availability you don't know. If unsure, say so gracefully and offer to connect them with the team.`
-
 const MIN_W = 280, MIN_H = 400, MAX_W = 600, MAX_H = 700
 
-export default function ChatWidget() {
+export default function ChatWidget({ persona }) {
+ 
+  const SYSTEM_PROMPT = `You are Sari, the warm and knowledgeable concierge assistant for Serai Retreat — an intimate luxury retreat nestled in the rice terraces of Ubud, Bali.
+
+    ${persona?.room ? `CURRENT GUEST CONTEXT:
+    - Guest name: ${persona.name}
+    - Room: ${persona.room}
+    - Booking reference: ${persona.ref}
+    - Email: ${persona.email}
+    - Stay dates: ${persona.dates} (${persona.nights} nights)
+    - Total paid: $${persona.total}
+    - Status: Confirmed
+
+    You already know who this guest is. Greet them warmly by first name and reference their booking naturally when relevant. You do NOT need to ask for their booking reference — you already have it.` : 
+    `CURRENT GUEST CONTEXT: This is a new visitor with no existing booking. Help them explore the retreat, answer questions about rooms and amenities, and encourage them to book.`}
+
+    Rooms available:
+    - Jungle Suite: $120/night, up to 2 guests
+    - Terrace Villa: $220/night, up to 2 guests  
+    - Retreat Villa: $380/night, up to 4 guests
+
+    Amenities: Balinese spa, farm-to-table dining, yoga pavilion, plunge pools, airport transfers.
+
+    Your tone is: warm, calm, poetic but not over-the-top. Keep responses concise — 2-4 sentences max unless the guest asks for detail.
+
+    For booking inquiries direct them to hello@serai.retreat. Never make up information you don't know.`
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hello, I'm Sari 🌿 Your Serai concierge. How can I help you today?" }
-  ])
+  const storageKey = `serai_chat_${persona?.id || 'visitor'}`
+
+  const [messages, setMessages] = useState(() => {
+    const saved = sessionStorage.getItem(storageKey)
+    if (saved) return JSON.parse(saved)
+    const greeting = persona?.room
+      ? `Welcome back, ${persona.name.split(' ')[0]}! 🌿 I can see you have the ${persona.room} booked for ${persona.dates}. How can I help with your stay?`
+      : "Hello! I'm Sari 🌿 Your Serai concierge. How can I help you today?"
+    return [{ role: 'assistant', content: greeting }]
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem(storageKey, JSON.stringify(messages))
+  }, [messages, storageKey])
+
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [size, setSize] = useState({ w: 340, h: 520 })
@@ -87,16 +110,21 @@ export default function ChatWidget() {
         .filter((_, i) => !(i === 0 && newMessages[0].role === 'assistant'))
         .map(m => ({ role: m.role, content: m.content }))
 
+      console.log('Sending to backend:', { persona, messageCount: apiMessages.length })
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages })
+        body: JSON.stringify({ messages: apiMessages, persona })
       })
 
       const data = await res.json()
+      console.log('Backend response:', data)
+
       const reply = data.content?.[0]?.text || "I'm sorry, I couldn't process that. Please try again."
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
-    } catch {
+    } catch (err) {
+      console.error('Chat error:', err)
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: "I'm having a moment of quiet — please try again shortly. 🙏"
