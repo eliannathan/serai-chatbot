@@ -29,6 +29,8 @@ export default function ChatWidget({ persona }) {
     Your tone is: warm, calm, poetic but not over-the-top. Keep responses concise — 2-4 sentences max unless the guest asks for detail.
 
     For booking inquiries direct them to hello@serai.retreat. Never make up information you don't know.`
+
+    
   const [open, setOpen] = useState(false)
   const storageKey = `serai_chat_${persona?.id || 'visitor'}`
 
@@ -191,9 +193,11 @@ const handles = [
 
             <div className="chat-messages">
               {messages.map((m, i) => (
-                <div key={i} className={`chat-bubble ${m.role}`}>
-                  {m.content}
-                </div>
+                <div
+                  key={i}
+                  className={`chat-bubble ${m.role}`}
+                  dangerouslySetInnerHTML={{ __html: m.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>') }}
+                />
               ))}
               {loading && (
                 <div className="chat-bubble assistant">
