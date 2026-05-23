@@ -4,32 +4,6 @@ import { supabase } from '../supabase'
 const MIN_W = 280, MIN_H = 400, MAX_W = 600, MAX_H = 700
 
 export default function ChatWidget({ persona }) {
- 
-  const SYSTEM_PROMPT = `You are Sari, the warm and knowledgeable concierge assistant for Serai Retreat — an intimate luxury retreat nestled in the rice terraces of Ubud, Bali.
-
-    ${persona?.room ? `CURRENT GUEST CONTEXT:
-    - Guest name: ${persona.name}
-    - Room: ${persona.room}
-    - Booking reference: ${persona.ref}
-    - Email: ${persona.email}
-    - Stay dates: ${persona.dates} (${persona.nights} nights)
-    - Total paid: $${persona.total}
-    - Status: Confirmed
-
-    You already know who this guest is. Greet them warmly by first name and reference their booking naturally when relevant. You do NOT need to ask for their booking reference — you already have it.` : 
-    `CURRENT GUEST CONTEXT: This is a new visitor with no existing booking. Help them explore the retreat, answer questions about rooms and amenities, and encourage them to book.`}
-
-    Rooms available:
-    - Jungle Suite: $120/night, up to 2 guests
-    - Terrace Villa: $220/night, up to 2 guests  
-    - Retreat Villa: $380/night, up to 4 guests
-
-    Amenities: Balinese spa, farm-to-table dining, yoga pavilion, plunge pools, airport transfers.
-
-    Your tone is: warm, calm, poetic but not over-the-top. Keep responses concise — 2-4 sentences max unless the guest asks for detail.
-
-    For booking inquiries direct them to hello@serai.retreat. Never make up information you don't know.`
-
 
   const [open, setOpen] = useState(false)
   const storageKey = `serai_chat_${persona?.id || 'visitor'}`
@@ -47,11 +21,30 @@ export default function ChatWidget({ persona }) {
     sessionStorage.setItem(storageKey, JSON.stringify(messages))
   }, [messages, storageKey])
 
+  // Lock body scroll when mobile chat is open
+  useEffect(() => {
+    if (open && window.innerWidth <= 768) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [open])
+
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [size, setSize] = useState({ w: 340, h: 520 })
   const bottomRef = useRef(null)
   const panelRef = useRef(null)
+  const mobileScrollRef = useRef(null)
   const resizing = useRef(null)
 
   useEffect(() => {
@@ -142,44 +135,52 @@ export default function ChatWidget({ persona }) {
     }
   }
 
-const handles = [
-  { dir: 'n',  style: { top: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 'n-resize' } },
-  { dir: 's',  style: { bottom: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 's-resize' } },
-  { dir: 'e',  style: { right: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'e-resize' } },
-  { dir: 'w',  style: { left: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'w-resize' } },
-  { dir: 'ne', style: { top: -6, right: -6, width: 24, height: 24, cursor: 'ne-resize' } },
-  { dir: 'nw', style: { top: -6, left: -6, width: 24, height: 24, cursor: 'nw-resize' } },
-  { dir: 'se', style: { bottom: -6, right: -6, width: 24, height: 24, cursor: 'se-resize' } },
-  { dir: 'sw', style: { bottom: -6, left: -6, width: 24, height: 24, cursor: 'sw-resize' } },
-]
+  const handles = [
+    { dir: 'n',  style: { top: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 'n-resize' } },
+    { dir: 's',  style: { bottom: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 's-resize' } },
+    { dir: 'e',  style: { right: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'e-resize' } },
+    { dir: 'w',  style: { left: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'w-resize' } },
+    { dir: 'ne', style: { top: -6, right: -6, width: 24, height: 24, cursor: 'ne-resize' } },
+    { dir: 'nw', style: { top: -6, left: -6, width: 24, height: 24, cursor: 'nw-resize' } },
+    { dir: 'se', style: { bottom: -6, right: -6, width: 24, height: 24, cursor: 'se-resize' } },
+    { dir: 'sw', style: { bottom: -6, left: -6, width: 24, height: 24, cursor: 'sw-resize' } },
+  ]
 
-const quickReplies = persona?.room
-  ? [
-      { label: '📋 View my booking', message: 'Can you pull up my booking details?' },
-      { label: '💆 Spa hours', message: 'What are the spa hours?' },
-      { label: '🍽️ Dining options', message: 'What dining options do you have?' },
-      { label: '📍 Things to do nearby', message: 'What are some local recommendations?' },
-    ]
-  : [
-      { label: '🛏️ View rooms', message: 'What rooms do you have available?' },
-      { label: '💰 Room prices', message: 'How much are the rooms?' },
-      { label: '🌿 Amenities', message: 'What amenities does the resort offer?' },
-      { label: '📅 How to book', message: 'How do I make a booking?' },
-    ]
+  const quickReplies = persona?.room
+    ? [
+        { label: '📋 View my booking', message: 'Can you pull up my booking details?' },
+        { label: '💆 Spa hours', message: 'What are the spa hours?' },
+        { label: '🍽️ Dining options', message: 'What dining options do you have?' },
+        { label: '📍 Things to do nearby', message: 'What are some local recommendations?' },
+      ]
+    : [
+        { label: '🛏️ View rooms', message: 'What rooms do you have available?' },
+        { label: '💰 Room prices', message: 'How much are the rooms?' },
+        { label: '🌿 Amenities', message: 'What amenities does the resort offer?' },
+        { label: '📅 How to book', message: 'How do I make a booking?' },
+      ]
 
-function handleQuickReply(message) {
-  setInput(message)
-  // Send immediately
-  setTimeout(() => {
-    sendMessageWithText(message)
-  }, 0)
-}
-const isMobile = window.innerWidth <= 768
+  function handleQuickReply(message) {
+    setInput(message)
+    setTimeout(() => { sendMessageWithText(message) }, 0)
+  }
+
+  const isMobile = window.innerWidth <= 768
+
+  const bubbleHTML = (content) => ({
+    __html: content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br/>')
+  })
 
   return (
     <>
-      {/* DESKTOP: floating toggle button */}
-      <button onClick={() => setOpen(o => !o)} className="chat-toggle" aria-label="Open chat">
+      {/* TOGGLE BUTTON */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="chat-toggle"
+        aria-label="Open chat"
+      >
         {open ? '✕' : '🌿'}
       </button>
 
@@ -213,16 +214,13 @@ const isMobile = window.innerWidth <= 768
               </div>
               <button onClick={() => setOpen(false)} className="chat-close">✕</button>
             </div>
+
             <div className="chat-messages">
               {messages.map((m, i) => (
                 <div
                   key={i}
                   className={`chat-bubble ${m.role}`}
-                  dangerouslySetInnerHTML={{
-                    __html: m.content
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\n/g, '<br/>')
-                  }}
+                  dangerouslySetInnerHTML={bubbleHTML(m.content)}
                 />
               ))}
               {loading && (
@@ -232,6 +230,7 @@ const isMobile = window.innerWidth <= 768
               )}
               <div ref={bottomRef} />
             </div>
+
             {messages.length <= 2 && (
               <div className="chat-quick-replies">
                 {quickReplies.map(qr => (
@@ -246,6 +245,7 @@ const isMobile = window.innerWidth <= 768
                 ))}
               </div>
             )}
+
             <div className="chat-input-row">
               <textarea
                 value={input}
@@ -255,7 +255,13 @@ const isMobile = window.innerWidth <= 768
                 className="chat-input"
                 rows={1}
               />
-              <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
+              <button
+                onClick={sendMessage}
+                disabled={loading || !input.trim()}
+                className="chat-send"
+              >
+                ↑
+              </button>
             </div>
           </div>
         </div>
@@ -273,16 +279,12 @@ const isMobile = window.innerWidth <= 768
             </div>
           </div>
 
-          <div className="chat-mobile-messages">
+          <div className="chat-mobile-messages" ref={mobileScrollRef}>
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`chat-bubble ${m.role}`}
-                dangerouslySetInnerHTML={{
-                  __html: m.content
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br/>')
-                }}
+                dangerouslySetInnerHTML={bubbleHTML(m.content)}
               />
             ))}
             {loading && (
@@ -314,10 +316,16 @@ const isMobile = window.innerWidth <= 768
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               placeholder="Ask Sari anything..."
-              className="chat-input"
+              className="chat-input chat-input-mobile"
               rows={1}
             />
-            <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
+            <button
+              onClick={sendMessage}
+              disabled={loading || !input.trim()}
+              className="chat-send"
+            >
+              ↑
+            </button>
           </div>
         </div>
       )}

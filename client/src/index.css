@@ -313,6 +313,7 @@ body {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
 }
+
 /* ===== CHAT WIDGET ===== */
 .chat-toggle {
   position: fixed;
@@ -368,9 +369,7 @@ body {
   font-size: 1rem;
   display: flex; align-items: center; justify-content: center;
 }
-.chat-name {
-  font-size: 0.875rem; font-weight: 500; color: var(--dark);
-}
+.chat-name { font-size: 0.875rem; font-weight: 500; color: var(--dark); }
 .chat-role { font-size: 0.75rem; color: var(--muted); }
 .chat-close {
   background: none; border: none; cursor: pointer;
@@ -481,7 +480,6 @@ body {
   justify-content: center;
   padding: 1rem;
 }
-
 .demo-modal {
   background: var(--white);
   border-radius: var(--radius-lg);
@@ -490,12 +488,10 @@ body {
   width: 100%;
   box-shadow: 0 24px 64px rgba(26,28,24,0.2);
 }
-
 .demo-modal-header {
   text-align: center;
   margin-bottom: 2rem;
 }
-
 .demo-eyebrow {
   font-size: 0.7rem;
   letter-spacing: 0.2em;
@@ -504,27 +500,23 @@ body {
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
-
 .demo-modal-header h2 {
   font-family: var(--font-display);
   font-size: 1.8rem;
   font-weight: 300;
   margin-bottom: 0.75rem;
 }
-
 .demo-sub {
   font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.6;
 }
-
 .demo-personas {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
-
 .demo-persona-card {
   display: flex;
   align-items: center;
@@ -538,40 +530,25 @@ body {
   transition: border-color 0.2s, background 0.2s;
   width: 100%;
 }
-
 .demo-persona-card:hover {
   border-color: var(--sage);
   background: var(--sage-light);
 }
-
-.demo-persona-card.visitor {
-  border-style: dashed;
-}
-
-.demo-persona-emoji {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
+.demo-persona-card.visitor { border-style: dashed; }
+.demo-persona-emoji { font-size: 1.5rem; flex-shrink: 0; }
 .demo-persona-name {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--dark);
   margin-bottom: 0.15rem;
 }
-
 .demo-persona-room {
   font-size: 0.8rem;
   color: var(--sage);
   font-weight: 500;
   margin-bottom: 0.1rem;
 }
-
-.demo-persona-meta {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
+.demo-persona-meta { font-size: 0.75rem; color: var(--muted); }
 .demo-disclaimer {
   font-size: 0.72rem;
   color: var(--muted);
@@ -586,7 +563,6 @@ body {
   gap: 0.5rem;
   padding: 0.75rem 1rem 0;
 }
-
 .quick-reply-btn {
   font-family: var(--font-body);
   font-size: 0.78rem;
@@ -599,16 +575,11 @@ body {
   transition: background 0.2s, color 0.2s;
   white-space: nowrap;
 }
-
 .quick-reply-btn:hover:not(:disabled) {
   background: var(--sage);
   color: var(--white);
 }
-
-.quick-reply-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.quick-reply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ===== MOBILE RESPONSIVE ===== */
 
@@ -635,39 +606,48 @@ body {
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* --- Mobile Nav Dropdown --- */
 .mobile-menu {
   display: none;
   position: fixed;
-  inset: 0;
-  z-index: 250;
-  background: var(--cream);
+  top: 64px;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: rgba(250,249,246,0.98);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
+  padding: 0.5rem 1.5rem 1rem;
+  gap: 0;
+  box-shadow: 0 8px 24px rgba(26,28,24,0.08);
 }
-.mobile-menu.open { display: flex; }
+.mobile-menu.open {
+  display: flex;
+  animation: dropDown 0.2s ease;
+}
 .mobile-menu a {
-  font-family: var(--font-display);
-  font-size: 2.2rem;
-  font-weight: 300;
-  color: var(--dark);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
   text-decoration: none;
-  letter-spacing: 0.08em;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
   transition: color 0.2s;
 }
-.mobile-menu a:hover { color: var(--sage); }
-.mobile-menu-close {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--mid);
+.mobile-menu a:last-child { border-bottom: none; }
+.mobile-menu a:hover { color: var(--dark); }
+.mobile-menu-close { display: none; }
+
+@keyframes dropDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- Mobile breakpoint --- */
 @media (max-width: 768px) {
   /* Nav */
   .nav { padding: 1rem 1.5rem; }
@@ -699,23 +679,20 @@ body {
   /* Amenities — 2 columns on mobile */
   .amenities-grid { grid-template-columns: repeat(2, 1fr); }
 
-  /* My Booking form */
+  /* My Booking */
   .page-content.narrow { max-width: 100%; }
 
   /* Demo modal */
   .demo-modal { padding: 1.75rem 1.25rem; }
   .demo-modal-header h2 { font-size: 1.5rem; }
 
-  /* Chat toggle button */
-  .chat-toggle {
-    bottom: 1.5rem;
-    right: 1.5rem;
-  }
+  /* Chat toggle */
+  .chat-toggle { bottom: 1.5rem; right: 1.5rem; }
 
-  /* Chat panel — hidden on mobile (replaced by full screen) */
+  /* Hide desktop chat panel on mobile */
   .chat-panel { display: none; }
 
-  /* Mobile chat full screen */
+  /* Mobile chat — full screen with slide up */
   .chat-mobile {
     position: fixed;
     inset: 0;
@@ -723,45 +700,64 @@ body {
     background: var(--white);
     display: flex;
     flex-direction: column;
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
   .chat-mobile-header {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.25rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
     border-bottom: 1px solid var(--border);
     background: var(--cream);
-    padding-top: max(1rem, env(safe-area-inset-top));
   }
   .chat-back-btn {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     color: var(--mid);
-    padding: 0.25rem;
+    padding: 0.25rem 0.5rem 0.25rem 0;
     display: flex;
     align-items: center;
+    line-height: 1;
   }
-  .chat-back-btn:hover { color: var(--dark); }
+  .chat-back-btn:active { color: var(--dark); }
+
+  /* Dynamic scroll like Instagram DM */
   .chat-mobile-messages {
     flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+
+  /* iOS zoom fix — must be 16px */
+  .chat-input-mobile {
+    font-size: 16px !important;
+  }
+
   .chat-mobile-input-row {
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border);
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
     background: var(--white);
   }
+
   .chat-mobile-quick-replies {
     display: flex;
     flex-wrap: nowrap;
@@ -773,7 +769,7 @@ body {
   .chat-mobile-quick-replies::-webkit-scrollbar { display: none; }
 }
 
-/* Tablet tweaks (768px - 1024px) */
+/* --- Tablet tweaks (769px - 1024px) --- */
 @media (min-width: 769px) and (max-width: 1024px) {
   .room-grid { grid-template-columns: repeat(2, 1fr); }
   .amenities-grid { grid-template-columns: repeat(2, 1fr); }
