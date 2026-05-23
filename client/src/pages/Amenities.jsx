@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 
 const amenities = [
   { icon: '🌿', title: 'Rice Terrace Views', desc: 'Every villa faces the valley. Sunrise from your balcony is non-negotiable.' },
@@ -10,6 +11,9 @@ const amenities = [
 ]
 
 export default function Amenities() {
+
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="page">
       <nav className="nav">
@@ -19,7 +23,23 @@ export default function Amenities() {
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
         </div>
+        <button
+          className={`hamburger ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </nav>
+
+      {/* Mobile full-screen menu overlay */}
+      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
+        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
+        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
+        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
+        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+      </div>
 
       <div className="page-content">
         <h1 className="page-title">Amenities</h1>

@@ -8,6 +8,7 @@ export default function MyBooking() {
   const [booking, setBooking] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function handleLookup() {
     setLoading(true)
@@ -38,7 +39,23 @@ export default function MyBooking() {
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
         </div>
+        <button
+          className={`hamburger ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </nav>
+
+      {/* Mobile full-screen menu overlay */}
+      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
+        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
+        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
+        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
+        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+      </div>
 
       <div className="page-content narrow">
         <h1 className="page-title">My Booking</h1>

@@ -1,17 +1,36 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 
 export default function Landing() {
+
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
     <div className="landing">
       {/* NAV */}
       <nav className="nav">
-        <div className="nav-logo">SERAI</div>
+        <Link to="/" className="nav-logo">SERAI</Link>
         <div className="nav-links">
           <Link to="/rooms">Rooms</Link>
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
         </div>
+        <button
+          className={`hamburger ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </nav>
+
+      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
+        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
+        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
+        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
+        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+      </div>
 
       {/* HERO */}
       <section className="hero">

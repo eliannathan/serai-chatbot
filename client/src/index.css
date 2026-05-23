@@ -609,3 +609,177 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+/* --- Hamburger Nav --- */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  z-index: 300;
+}
+.hamburger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--dark);
+  border-radius: 2px;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: var(--cream);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 300;
+  color: var(--dark);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  transition: color 0.2s;
+}
+.mobile-menu a:hover { color: var(--sage); }
+.mobile-menu-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--mid);
+}
+
+@media (max-width: 768px) {
+  /* Nav */
+  .nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+
+  /* Hero */
+  .hero { padding: 0 1.5rem; min-height: 100svh; }
+  .hero-text { padding-top: 7rem; max-width: 100%; }
+  .hero h1 {
+    /* Scale down version */
+    font-size: clamp(2rem, 8vw, 3rem);
+    /* Large dramatic version (swap if preferred):
+       font-size: clamp(2.8rem, 10vw, 4.5rem); */
+  }
+  .hero-sub { font-size: 0.9rem; margin-bottom: 2rem; }
+
+  /* Room grid — single column */
+  .room-grid { grid-template-columns: 1fr; }
+  .rooms-preview { padding: 4rem 1.5rem; }
+
+  /* Room detail cards — stack vertically */
+  .room-detail-card { grid-template-columns: 1fr; }
+  .room-detail-img { min-height: 200px; }
+  .room-detail-body { padding: 1.25rem; }
+  .room-detail-header { flex-direction: column; gap: 0.5rem; }
+  .page-content { padding: 6rem 1.5rem 3rem; }
+
+  /* Amenities — 2 columns on mobile */
+  .amenities-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* My Booking form */
+  .page-content.narrow { max-width: 100%; }
+
+  /* Demo modal */
+  .demo-modal { padding: 1.75rem 1.25rem; }
+  .demo-modal-header h2 { font-size: 1.5rem; }
+
+  /* Chat toggle button */
+  .chat-toggle {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+
+  /* Chat panel — hidden on mobile (replaced by full screen) */
+  .chat-panel { display: none; }
+
+  /* Mobile chat full screen */
+  .chat-mobile {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--cream);
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  .chat-back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--mid);
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+  }
+  .chat-back-btn:hover { color: var(--dark); }
+  .chat-mobile-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .chat-mobile-input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    background: var(--white);
+  }
+  .chat-mobile-quick-replies {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0;
+    scrollbar-width: none;
+  }
+  .chat-mobile-quick-replies::-webkit-scrollbar { display: none; }
+}
+
+/* Tablet tweaks (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .room-grid { grid-template-columns: repeat(2, 1fr); }
+  .amenities-grid { grid-template-columns: repeat(2, 1fr); }
+  .room-detail-card { grid-template-columns: 220px 1fr; }
+  .nav { padding: 1.25rem 2rem; }
+  .hero { padding: 0 2rem; }
+  .rooms-preview { padding: 5rem 2rem; }
+  .page-content { padding: 7rem 2rem 3rem; }
+}

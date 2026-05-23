@@ -174,32 +174,34 @@ function handleQuickReply(message) {
     sendMessageWithText(message)
   }, 0)
 }
+const isMobile = window.innerWidth <= 768
 
   return (
     <>
+      {/* DESKTOP: floating toggle button */}
       <button onClick={() => setOpen(o => !o)} className="chat-toggle" aria-label="Open chat">
         {open ? '✕' : '🌿'}
       </button>
 
-      {open && (
+      {/* DESKTOP: floating panel */}
+      {open && !isMobile && (
         <div
           ref={panelRef}
           className="chat-panel"
           style={{ width: size.w, height: size.h, resize: 'none' }}
         >
-          {/* Resize handles */}
-            {handles.map(h => (
-              <div
-                key={h.dir}
-                onMouseDown={(e) => startResize(e, h.dir)}
-                style={{
-                  position: 'absolute',
-                  ...h.style,
-                  zIndex: 10,
-                  userSelect: 'none',
-                }}
-              />
-            ))}
+          {handles.map(h => (
+            <div
+              key={h.dir}
+              onMouseDown={(e) => startResize(e, h.dir)}
+              style={{
+                position: 'absolute',
+                ...h.style,
+                zIndex: 10,
+                userSelect: 'none',
+              }}
+            />
+          ))}
           <div className="chat-inner">
             <div className="chat-header">
               <div className="chat-header-info">
@@ -211,25 +213,25 @@ function handleQuickReply(message) {
               </div>
               <button onClick={() => setOpen(false)} className="chat-close">✕</button>
             </div>
-
             <div className="chat-messages">
               {messages.map((m, i) => (
                 <div
                   key={i}
                   className={`chat-bubble ${m.role}`}
-                  dangerouslySetInnerHTML={{ __html: m.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>') }}
+                  dangerouslySetInnerHTML={{
+                    __html: m.content
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\n/g, '<br/>')
+                  }}
                 />
               ))}
               {loading && (
                 <div className="chat-bubble assistant">
-                  <span className="chat-typing">
-                    <span /><span /><span />
-                  </span>
+                  <span className="chat-typing"><span /><span /><span /></span>
                 </div>
               )}
               <div ref={bottomRef} />
             </div>
-            {/* Quick replies — show only when conversation is short */}
             {messages.length <= 2 && (
               <div className="chat-quick-replies">
                 {quickReplies.map(qr => (
@@ -244,7 +246,6 @@ function handleQuickReply(message) {
                 ))}
               </div>
             )}
-            
             <div className="chat-input-row">
               <textarea
                 value={input}
@@ -254,10 +255,69 @@ function handleQuickReply(message) {
                 className="chat-input"
                 rows={1}
               />
-              <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">
-                ↑
-              </button>
+              <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE: full screen chat */}
+      {open && isMobile && (
+        <div className="chat-mobile">
+          <div className="chat-mobile-header">
+            <button onClick={() => setOpen(false)} className="chat-back-btn">←</button>
+            <span className="chat-avatar">S</span>
+            <div>
+              <p className="chat-name">Sari</p>
+              <p className="chat-role">Serai Concierge</p>
+            </div>
+          </div>
+
+          <div className="chat-mobile-messages">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`chat-bubble ${m.role}`}
+                dangerouslySetInnerHTML={{
+                  __html: m.content
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br/>')
+                }}
+              />
+            ))}
+            {loading && (
+              <div className="chat-bubble assistant">
+                <span className="chat-typing"><span /><span /><span /></span>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {messages.length <= 2 && (
+            <div className="chat-mobile-quick-replies">
+              {quickReplies.map(qr => (
+                <button
+                  key={qr.label}
+                  className="quick-reply-btn"
+                  onClick={() => handleQuickReply(qr.message)}
+                  disabled={loading}
+                >
+                  {qr.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="chat-mobile-input-row">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Ask Sari anything..."
+              className="chat-input"
+              rows={1}
+            />
+            <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
           </div>
         </div>
       )}

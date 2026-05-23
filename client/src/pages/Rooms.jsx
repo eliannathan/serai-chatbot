@@ -5,6 +5,7 @@ import { supabase } from '../supabase'
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     async function fetchRooms() {
@@ -24,7 +25,23 @@ export default function Rooms() {
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
         </div>
+        <button
+          className={`hamburger ${menuOpen ? 'open' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </nav>
+
+      {/* Mobile full-screen menu overlay */}
+      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
+        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
+        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
+        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
+        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+      </div>
 
       <div className="page-content">
         <h1 className="page-title">Our Rooms</h1>
