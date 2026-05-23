@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
+import RoomCarousel from '../components/RoomCarousel'
+import { roomImages } from '../data/roomImages'
 
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
@@ -34,7 +36,6 @@ export default function Rooms() {
         </button>
       </nav>
 
-      {/* Mobile full-screen menu overlay */}
       <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
         <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
         <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
@@ -53,7 +54,11 @@ export default function Rooms() {
           <div className="rooms-list">
             {rooms.map(room => (
               <div key={room.id} className="room-detail-card">
-                <div className="room-detail-img" />
+                <RoomCarousel
+                  images={roomImages[room.name]?.gallery || []}
+                  roomName={room.name}
+                  className="room-detail-carousel"
+                />
                 <div className="room-detail-body">
                   <div className="room-detail-header">
                     <h2>{room.name}</h2>

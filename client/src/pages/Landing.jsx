@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import RoomCarousel from '../components/RoomCarousel'
+import { roomImages } from '../data/roomImages'
 
 export default function Landing() {
 
   const [menuOpen, setMenuOpen] = useState(false)
-
+  const rooms = [
+    { name: 'Jungle Suite', price: '$120', desc: 'Bamboo, mist, and birdsong.' },
+    { name: 'Terrace Villa', price: '$220', desc: 'Plunge pool over the valley.' },
+    { name: 'Retreat Villa', price: '$380', desc: 'Your own private compound.' },
+  ]
+  
   return (
     <div className="landing">
       {/* NAV */}
@@ -49,13 +56,13 @@ export default function Landing() {
       <section className="rooms-preview">
         <h2>The Spaces</h2>
         <div className="room-grid">
-          {[
-            { name: 'Jungle Suite', price: '$120', desc: 'Bamboo, mist, and birdsong.' },
-            { name: 'Terrace Villa', price: '$220', desc: 'Plunge pool over the valley.' },
-            { name: 'Retreat Villa', price: '$380', desc: 'Your own private compound.' },
-          ].map(r => (
+          {rooms.map(r => (
             <div key={r.name} className="room-card">
-              <div className="room-card-img" />
+              <RoomCarousel
+                images={roomImages[r.name].gallery}
+                roomName={r.name}
+                className="room-card-carousel"
+              />
               <div className="room-card-body">
                 <h3>{r.name}</h3>
                 <p>{r.desc}</p>
