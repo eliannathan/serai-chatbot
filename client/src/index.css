@@ -1043,3 +1043,273 @@ body {
   .lightbox-arrow { width: 36px; height: 36px; font-size: 1.4rem; }
   .lightbox-thumbs { display: none; }
 }
+
+/* ===== BOOKING FLOW ===== */
+.booking-flow-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow-y: auto;
+}
+
+.booking-flow {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+.booking-progress {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.booking-step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.booking-step-dot span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--white);
+}
+
+.booking-step-dot p {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.booking-step-dot.active span {
+  border-color: var(--sage);
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.booking-step-dot.done span {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: white;
+}
+
+.booking-section { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.booking-section-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--dark);
+}
+
+.booking-room-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.booking-room-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--cream);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.booking-room-option:hover { border-color: var(--sage); background: var(--sage-light); }
+.booking-room-option.selected { border-color: var(--sage); background: var(--sage-light); }
+
+.booking-room-option-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--dark);
+  margin-bottom: 0.15rem;
+}
+
+.booking-room-option-desc { font-size: 0.75rem; color: var(--muted); }
+
+.booking-room-option-price {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--earth);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.booking-date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+.booking-field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.booking-field label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--mid);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.optional { font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+.booking-price-preview {
+  font-size: 0.85rem;
+  color: var(--mid);
+  background: var(--earth-light);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.booking-price-preview strong { color: var(--earth); }
+
+.booking-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+}
+
+.booking-cancel {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+.booking-cancel:hover { color: var(--dark); }
+
+.booking-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--cream);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
+
+.booking-review div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+
+.booking-review span { color: var(--muted); }
+.booking-review strong { color: var(--dark); }
+
+.booking-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.booking-confirmed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 1rem 0;
+}
+
+.booking-confirmed-icon { font-size: 2rem; }
+
+.booking-confirmed h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 400;
+}
+
+.booking-confirmed p { font-size: 0.85rem; color: var(--mid); max-width: 260px; }
+
+.booking-ref-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--sage-light);
+  border: 1px solid var(--sage);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 2rem;
+  width: 100%;
+}
+
+.booking-ref-box span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--sage); }
+.booking-ref-box strong { font-size: 1.2rem; color: var(--dark); letter-spacing: 0.08em; }
+
+.booking-summary-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  background: var(--cream);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+
+.booking-summary-mini div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.booking-summary-mini span { color: var(--muted); }
+.booking-summary-mini strong { color: var(--dark); }
+
+/* ===== CHAT ACTION BUTTONS ===== */
+.chat-bubble-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-bubble-wrap.user { align-items: flex-end; }
+.chat-bubble-wrap.assistant { align-items: flex-start; }
+
+.chat-action-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chat-action-btn {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--sage);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.chat-action-btn:hover { background: var(--sage); color: var(--white); }
+
+.chat-action-btn.primary {
+  background: var(--dark);
+  color: var(--white);
+  border-color: var(--dark);
+}
+
+.chat-action-btn.primary:hover { background: var(--sage); border-color: var(--sage); }

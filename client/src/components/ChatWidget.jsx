@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
+import BookingFlow from './BookingFlow'
+import { useNavigate } from 'react-router-dom'
 
 const MIN_W = 280, MIN_H = 400, MAX_W = 600, MAX_H = 700
 
@@ -7,6 +9,8 @@ export default function ChatWidget({ persona }) {
 
   const [open, setOpen] = useState(false)
   const storageKey = `serai_chat_${persona?.id || 'visitor'}`
+  const [showBookingFlow, setShowBookingFlow] = useState(false)
+  const navigate = useNavigate()
 
   const [messages, setMessages] = useState(() => {
     const saved = sessionStorage.getItem(storageKey)
@@ -112,7 +116,38 @@ export default function ChatWidget({ persona }) {
 
       const data = await res.json()
       const reply = data.content?.[0]?.text || "I'm sorry, I couldn't process that. Please try again."
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      const actions = data.actions || []
+
+      // Handle actions
+      actions.forEach(action => {
+        if (action === 'START_BOOKING') setShowBookingFlow(true)
+        if (action === 'GO_ROOMS') setTimeout(() => navigate('/rooms'), 1500)
+        if (action === 'GO_BOOKING') setTimeout(() => navigate('/my-booking'), 1500)
+        if (action === 'GO_AMENITIES') setTimeout(() => navigate('/amenities'), 1500)
+      })
+
+      // Build message with action buttons
+      const actionButtons = actions
+        .filter(a => a !== 'START_BOOKING')
+        .map(a => {
+          const map = {
+            GO_ROOMS: { label: '🛏️ Browse Rooms', path: '/rooms' },
+            GO_BOOKING: { label: '📋 My Booking', path: '/my-booking' },
+            GO_AMENITIES: { label: '🌿 Amenities', path: '/amenities' },
+            SHOW_BOOKING: { label: '📋 View My Booking', path: '/my-booking' },
+            CONTACT_TEAM: { label: '📧 Contact Team', path: null, email: 'reservations@serairetreat.com' },
+          }
+          return map[a]
+        })
+        .filter(Boolean)
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: reply,
+        actions: actionButtons,
+        showBookingBtn: actions.includes('START_BOOKING')
+      }])
+
     } catch (err) {
       console.error('Chat error:', err)
       setMessages(prev => [...prev, {
@@ -217,11 +252,35 @@ export default function ChatWidget({ persona }) {
 
             <div className="chat-messages">
               {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`chat-bubble ${m.role}`}
-                  dangerouslySetInnerHTML={bubbleHTML(m.content)}
-                />
+                <div key={i} className={`chat-bubble-wrap ${m.role}`}>
+                  <div
+                    className={`chat-bubble ${m.role}`}
+                    dangerouslySetInnerHTML={bubbleHTML(m.content)}
+                  />
+                  {/* Action buttons */}
+                  {m.actions?.length > 0 && (
+                    <div className="chat-action-btns">
+                      {m.actions.map(a => (
+                        <button
+                          key={a.label}
+                          className="chat-action-btn"
+                          onClick={() => a.path ? navigate(a.path) : window.location.href = `mailto:${a.email}`}
+                        >
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Start booking button */}
+                  {m.showBookingBtn && !showBookingFlow && (
+                    <button
+                      className="chat-action-btn primary"
+                      onClick={() => setShowBookingFlow(true)}
+                    >
+                      🌿 Start Booking
+                    </button>
+                  )}
+                </div>
               ))}
               {loading && (
                 <div className="chat-bubble assistant">
@@ -263,6 +322,22 @@ export default function ChatWidget({ persona }) {
                 ↑
               </button>
             </div>
+            {/* Booking Flow Overlay */}
+            {showBookingFlow && (
+              <div className="booking-flow-overlay">
+                <BookingFlow
+                  persona={persona}
+                  onComplete={(ref) => {
+                    setShowBookingFlow(false)
+                    setMessages(prev => [...prev, {
+                      role: 'assistant',
+                      content: `Your booking request has been submitted! 🌿 Reference: **${ref}**. Our team will confirm within 24 hours at ${persona?.email || 'your email'}.`
+                    }])
+                  }}
+                  onCancel={() => setShowBookingFlow(false)}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -281,11 +356,35 @@ export default function ChatWidget({ persona }) {
 
           <div className="chat-mobile-messages" ref={mobileScrollRef}>
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`chat-bubble ${m.role}`}
-                dangerouslySetInnerHTML={bubbleHTML(m.content)}
-              />
+              <div key={i} className={`chat-bubble-wrap ${m.role}`}>
+                <div
+                  className={`chat-bubble ${m.role}`}
+                  dangerouslySetInnerHTML={bubbleHTML(m.content)}
+                />
+                {/* Action buttons */}
+                {m.actions?.length > 0 && (
+                  <div className="chat-action-btns">
+                    {m.actions.map(a => (
+                      <button
+                        key={a.label}
+                        className="chat-action-btn"
+                        onClick={() => a.path ? navigate(a.path) : window.location.href = `mailto:${a.email}`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Start booking button */}
+                {m.showBookingBtn && !showBookingFlow && (
+                  <button
+                    className="chat-action-btn primary"
+                    onClick={() => setShowBookingFlow(true)}
+                  >
+                    🌿 Start Booking
+                  </button>
+                )}
+              </div>
             ))}
             {loading && (
               <div className="chat-bubble assistant">
@@ -327,6 +426,22 @@ export default function ChatWidget({ persona }) {
               ↑
             </button>
           </div>
+          {/* Booking Flow Overlay */}
+          {showBookingFlow && (
+            <div className="booking-flow-overlay">
+              <BookingFlow
+                persona={persona}
+                onComplete={(ref) => {
+                  setShowBookingFlow(false)
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: `Your booking request has been submitted! 🌿 Reference: **${ref}**. Our team will confirm within 24 hours at ${persona?.email || 'your email'}.`
+                  }])
+                }}
+                onCancel={() => setShowBookingFlow(false)}
+              />
+            </div>
+          )}
         </div>
       )}
     </>
