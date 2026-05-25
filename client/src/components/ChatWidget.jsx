@@ -121,9 +121,6 @@ export default function ChatWidget({ persona }) {
       // Handle actions
       actions.forEach(action => {
         if (action === 'START_BOOKING') setShowBookingFlow(true)
-        if (action === 'GO_ROOMS') setTimeout(() => navigate('/rooms'), 1500)
-        if (action === 'GO_BOOKING') setTimeout(() => navigate('/my-booking'), 1500)
-        if (action === 'GO_AMENITIES') setTimeout(() => navigate('/amenities'), 1500)
       })
 
       // Build message with action buttons
@@ -184,15 +181,15 @@ export default function ChatWidget({ persona }) {
   const quickReplies = persona?.room
     ? [
         { label: '📋 View my booking', message: 'Can you pull up my booking details?' },
+        { label: '📅 Make a new booking', message: 'I want to book a room' },
         { label: '💆 Spa hours', message: 'What are the spa hours?' },
-        { label: '🍽️ Dining options', message: 'What dining options do you have?' },
         { label: '📍 Things to do nearby', message: 'What are some local recommendations?' },
       ]
     : [
         { label: '🛏️ View rooms', message: 'What rooms do you have available?' },
         { label: '💰 Room prices', message: 'How much are the rooms?' },
+        { label: '📅 Book a room', message: 'I want to book a room' },
         { label: '🌿 Amenities', message: 'What amenities does the resort offer?' },
-        { label: '📅 How to book', message: 'How do I make a booking?' },
       ]
 
   function handleQuickReply(message) {

@@ -76,7 +76,7 @@ Available actions (include in your response when appropriate):
 Rules for using actions:
 - When a guest asks about rooms or prices → include [ACTION:GO_ROOMS]
 - When a guest asks about their booking → include [ACTION:SHOW_BOOKING]
-- When a guest wants to make a booking → include [ACTION:START_BOOKING]
+- When a guest says they want to book, reserve, check availability, or start a booking → ALWAYS include [ACTION:START_BOOKING]. Never just describe the booking process in text; always include the tag so the button renders.
 - When a guest asks about amenities → include [ACTION:GO_AMENITIES]
 - When a guest needs human help → include [ACTION:CONTACT_TEAM]
 - When a guest asks how to check their booking → include [ACTION:GO_BOOKING]
@@ -144,14 +144,23 @@ function checkRateLimit(ip) {
 
 async function getBookingContext(personaRef, personaEmail) {
   if (!personaRef || !personaEmail) return null
+
   const { data, error } = await supabase
     .from('bookings')
     .select('*, rooms(name, type, price_per_night)')
     .eq('booking_ref', personaRef)
     .eq('guest_email', personaEmail)
     .single()
+
   if (error || !data) return null
-  return data
+
+  const { data: requests } = await supabase
+    .from('booking_requests')
+    .select('*')
+    .eq('guest_email', personaEmail)
+    .eq('status', 'pending')
+
+  return { ...data, bookingRequests: requests || [] }
 }
 
 async function createBookingRequest(requestData) {
@@ -201,6 +210,12 @@ ${persona.name}. They may have a booking but it could not be retrieved right now
 - Check-out: ${booking.check_out}
 - Total paid: $${booking.total_price}
 - Status: ${booking.status}
+
+  ${booking.bookingRequests?.length > 0 ? `
+  PENDING BOOKING REQUESTS (submitted via chat, awaiting confirmation):
+  ${booking.bookingRequests.map(r => `- ${r.request_ref}: ${r.room_name}, ${r.check_in} to ${r.check_out}, ${r.num_guests} guest(s) — ${r.status}`).join('\n')}
+
+  This guest has ${1 + booking.bookingRequests.length} total: 1 confirmed booking + ${booking.bookingRequests.length} pending request(s).` : ''}
 
 You have FULL access to this guest's booking. Share any of these details freely when asked. If they ask for their booking reference, confirmation number, or order code — it is ${booking.booking_ref}. Never say you don't have access to their details. Never share this guest's details with anyone who identifies as a different person.`
 }

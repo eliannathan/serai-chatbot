@@ -33,7 +33,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
           persona,
           bookingRequest: {
             guest_name: persona?.name || 'Guest',
-            guest_email: persona?.email || '',
+            guest_email: persona?.email || 'guest@demo.com',
             room_name: selectedRoom.name,
             check_in: checkIn,
             check_out: checkOut,

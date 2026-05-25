@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export default function ImageGallery({ images, roomName, onClose }) {
   const [current, setCurrent] = useState(0)
@@ -11,6 +11,15 @@ export default function ImageGallery({ images, roomName, onClose }) {
     setCurrent(c => (c + 1) % images.length)
   }, [images.length])
 
+  const touchStartX = useRef(null)
+  function onTouchStart(e) { touchStartX.current = e.touches[0].clientX }
+  function onTouchEnd(e) {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    if (delta > 50) prev()
+    else if (delta < -50) next()
+    touchStartX.current = null
+  }
   useEffect(() => {
     function handleKey(e) {
       if (e.key === 'ArrowLeft') prev()
@@ -32,7 +41,7 @@ export default function ImageGallery({ images, roomName, onClose }) {
       <div className="lightbox-panel" onClick={e => e.stopPropagation()}>
         <button className="lightbox-close" onClick={onClose}>✕</button>
 
-        <div className="lightbox-img-wrap">
+        <div className="lightbox-img-wrap" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <img
             src={images[current]}
             alt={`${roomName} ${current + 1}`}
