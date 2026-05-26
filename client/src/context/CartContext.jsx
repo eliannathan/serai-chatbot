@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 
 const CartContext = createContext(null)
-
 const CART_KEY = 'serai_cart'
+const MAX_CART_ITEMS = 5
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(() => {
@@ -17,7 +17,10 @@ export function CartProvider({ children }) {
   }, [cart])
 
   function addToCart(item) {
-    setCart(prev => [...prev, { ...item, id: crypto.randomUUID() }])
+    setCart(prev => {
+      if (prev.length >= MAX_CART_ITEMS) return prev
+      return [...prev, { ...item, id: crypto.randomUUID() }]
+    })
   }
 
   function removeFromCart(id) {
@@ -29,11 +32,17 @@ export function CartProvider({ children }) {
     sessionStorage.removeItem(CART_KEY)
   }
 
-  const cartTotal = cart.reduce((sum, i) => sum + i.total, 0)
-  const cartCount = cart.length
+  const value = useMemo(() => ({
+    cart,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    cartTotal: cart.reduce((sum, i) => sum + i.total, 0),
+    cartCount: cart.length,
+  }), [cart])
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   )

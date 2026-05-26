@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useCart } from "../context/CartContext"
 
 const ROOMS = [
@@ -17,7 +17,6 @@ const ADD_ONS = [
 
 export default function BookPage() {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const { addToCart } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -43,9 +42,9 @@ export default function BookPage() {
   }, [preselected])
 
   const nights = checkIn && checkOut
-    ? Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
+    ? Math.max(0, (new Date(checkOut + 'T12:00:00') - new Date(checkIn + 'T12:00:00')) / 86400000)
     : 0
-
+    
   const addOnTotal = selectedAddOns.reduce((sum, id) => {
     const a = ADD_ONS.find(a => a.id === id)
     return sum + (a?.price || 0)

@@ -3,28 +3,32 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useCart } from "../context/CartContext"
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
 export default function MyBooking() {
   const [email, setEmail] = useState('')
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { cartCount: pendingCount } = useCart()
 
   async function handleLookup() {
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
     setLoading(true)
     setError('')
     setBookings([])
-    setSearched(false)
 
     const { data, error: err } = await supabase
       .from('bookings')
       .select('*, rooms(name, type)')
       .eq('guest_email', email.trim().toLowerCase())
       .order('check_in', { ascending: true })
-
-    setSearched(true)
 
     if (err || !data || data.length === 0) {
       setError('No bookings found for this email address.')
@@ -83,7 +87,11 @@ export default function MyBooking() {
             onKeyDown={e => e.key === 'Enter' && handleLookup()}
             className="input"
           />
-          <button onClick={handleLookup} className="btn-primary" disabled={loading || !email.trim()}>
+          <button
+            onClick={handleLookup}
+            className="btn-primary"
+            disabled={loading || !email.trim()}
+          >
             {loading ? 'Looking up...' : 'Find My Bookings'}
           </button>
         </div>

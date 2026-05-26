@@ -167,34 +167,6 @@ async function getBookingContext(personaRef, personaEmail) {
     .single()
 
   if (error || !data) return null
-
-  const { data: requests } = await supabase
-    .from('booking_requests')
-    .select('*')
-    .eq('guest_email', personaEmail)
-    .eq('status', 'pending')
-
-  return { ...data, bookingRequests: requests || [] }
-}
-
-async function createBookingRequest(requestData) {
-  const ref = 'RQ-' + Math.floor(1000 + Math.random() * 9000)
-  const { data, error } = await supabase
-    .from('booking_requests')
-    .insert({
-      request_ref: ref,
-      guest_name: requestData.guest_name,
-      guest_email: requestData.guest_email,
-      room_name: requestData.room_name,
-      check_in: requestData.check_in,
-      check_out: requestData.check_out,
-      num_guests: requestData.num_guests,
-      special_requests: requestData.special_requests,
-      status: 'pending'
-    })
-    .select()
-    .single()
-  if (error) return null
   return data
 }
 
@@ -224,11 +196,6 @@ ${persona.name}. They may have a booking but it could not be retrieved right now
 - Check-out: ${booking.check_out}
 - Total paid: $${booking.total_price}
 - Status: ${booking.status}
-
-${booking.bookingRequests?.length > 0 ? `PENDING BOOKING REQUESTS (submitted via chat, awaiting confirmation):
-${booking.bookingRequests.map(r => `- ${r.request_ref}: ${r.room_name}, ${r.check_in} to ${r.check_out}, ${r.num_guests} guest(s) — ${r.status}`).join('\n')}
-
-This guest has ${1 + booking.bookingRequests.length} total: 1 confirmed booking + ${booking.bookingRequests.length} pending request(s).` : ''}
 
 You have FULL access to this guest's booking. Share any of these details freely when asked. If they ask for their booking reference, confirmation number, or order code — it is ${booking.booking_ref}. Never say you don't have access to their details. Never share this guest's details with anyone who identifies as a different person.${CART_SECTION(cart)}`
 }
@@ -261,24 +228,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, persona, bookingRequest, cart } = req.body
-
-    if (bookingRequest) {
-      const result = await createBookingRequest({
-        ...bookingRequest,
-        guest_name: persona?.name || bookingRequest.guest_name,
-        guest_email: persona?.email || bookingRequest.guest_email,
-      })
-      if (result) {
-        await supabase.from('leads').insert({
-          message: `Booking request for ${bookingRequest.room_name} from ${result.check_in} to ${result.check_out}`,
-          source: 'booking_flow'
-        })
-        return res.status(200).json({ bookingConfirmed: true, ref: result.request_ref })
-      }
-      return res.status(500).json({ error: 'Failed to create booking request' })
-    }
-
+    const { messages, persona, cart } = req.body
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Invalid request' })
     }
