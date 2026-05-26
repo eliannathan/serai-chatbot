@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useCart } from "../context/CartContext"
 
 const amenities = [
   { icon: '🌿', title: 'Rice Terrace Views', desc: 'Every villa faces the valley. Sunrise from your balcony is non-negotiable.' },
@@ -13,7 +14,7 @@ const amenities = [
 export default function Amenities() {
 
   const [menuOpen, setMenuOpen] = useState(false)
-
+  const { cartCount: pendingCount } = useCart()
   return (
     <div className="page">
       <nav className="nav">
@@ -22,6 +23,11 @@ export default function Amenities() {
           <Link to="/rooms">Rooms</Link>
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
+          {pendingCount > 0 && (
+            <Link to="/checkout" className="nav-pending">
+              Pending <span className="nav-pending-badge">{pendingCount}</span>
+            </Link>
+          )}
         </div>
         <button
           className={`hamburger ${menuOpen ? 'open' : ''}`}
@@ -32,13 +38,17 @@ export default function Amenities() {
         </button>
       </nav>
 
-      {/* Mobile full-screen menu overlay */}
       <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
         <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
         <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
         <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
         <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
         <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+        {pendingCount > 0 && (
+          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
+            Pending ({pendingCount})
+          </Link>
+        )}
       </div>
 
       <div className="page-content">

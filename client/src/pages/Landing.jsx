@@ -2,10 +2,14 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import RoomCarousel from '../components/RoomCarousel'
 import { roomImages } from '../data/roomImages'
+import { useCart } from "../context/CartContext"
 
 export default function Landing() {
 
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const { cartCount: pendingCount } = useCart()
+
   const rooms = [
     { name: 'Jungle Suite', price: '$120', desc: 'Bamboo, mist, and birdsong.' },
     { name: 'Terrace Villa', price: '$220', desc: 'Plunge pool over the valley.' },
@@ -21,6 +25,11 @@ export default function Landing() {
           <Link to="/rooms">Rooms</Link>
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
+          {pendingCount > 0 && (
+            <Link to="/checkout" className="nav-pending">
+              Pending <span className="nav-pending-badge">{pendingCount}</span>
+            </Link>
+          )}
         </div>
         <button
           className={`hamburger ${menuOpen ? 'open' : ''}`}
@@ -37,6 +46,11 @@ export default function Landing() {
         <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
         <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
         <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+        {pendingCount > 0 && (
+          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
+            Pending ({pendingCount})
+          </Link>
+        )}
       </div>
 
       {/* HERO */}

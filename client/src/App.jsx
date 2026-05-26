@@ -4,8 +4,11 @@ import Landing from './pages/Landing'
 import Rooms from './pages/Rooms'
 import Amenities from './pages/Amenities'
 import MyBooking from './pages/MyBooking'
+import Checkout from './pages/Checkout'
+import BookPage from './pages/BookPage'
 import ChatWidget from './components/ChatWidget'
 import DemoModal from './components/DemoModal'
+import { CartProvider } from './context/CartContext'
 
 export default function App() {
   const [persona, setPersona] = useState(null)
@@ -21,15 +24,19 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
-      {!persona && <DemoModal onSelect={handlePersonaSelect} />}
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/rooms" element={<Rooms />} />
-        <Route path="/amenities" element={<Amenities />} />
-        <Route path="/my-booking" element={<MyBooking />} />
-      </Routes>
-      {persona && <ChatWidget persona={persona} />}
-    </BrowserRouter>
+    <CartProvider>
+      <BrowserRouter>
+        {!persona && <DemoModal onSelect={handlePersonaSelect} />}
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/rooms" element={<Rooms />} />
+          <Route path="/amenities" element={<Amenities />} />
+          <Route path="/my-booking" element={<MyBooking />} />
+          <Route path="/book" element={<BookPage />} />
+          <Route path="/checkout" element={<Checkout />} />
+        </Routes>
+        {persona && <ChatWidget persona={persona} />}
+      </BrowserRouter>
+    </CartProvider>
   )
 }

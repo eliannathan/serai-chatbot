@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { useCart } from "../context/CartContext"
 
 export default function MyBooking() {
   const [ref, setRef] = useState('')
@@ -9,6 +10,7 @@ export default function MyBooking() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const { cartCount: pendingCount } = useCart()
 
   async function handleLookup() {
     setLoading(true)
@@ -38,6 +40,11 @@ export default function MyBooking() {
           <Link to="/rooms">Rooms</Link>
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
+          {pendingCount > 0 && (
+            <Link to="/checkout" className="nav-pending">
+              Pending <span className="nav-pending-badge">{pendingCount}</span>
+            </Link>
+          )}
         </div>
         <button
           className={`hamburger ${menuOpen ? 'open' : ''}`}
@@ -48,13 +55,17 @@ export default function MyBooking() {
         </button>
       </nav>
 
-      {/* Mobile full-screen menu overlay */}
       <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
         <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
         <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
         <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
         <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
         <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+        {pendingCount > 0 && (
+          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
+            Pending ({pendingCount})
+          </Link>
+        )}
       </div>
 
       <div className="page-content narrow">

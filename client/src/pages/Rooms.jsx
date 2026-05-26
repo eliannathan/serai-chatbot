@@ -3,12 +3,16 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import RoomCarousel from '../components/RoomCarousel'
 import { roomImages } from '../data/roomImages'
+import { useCart } from "../context/CartContext"
+import { useNavigate } from 'react-router-dom'
 
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
-
+  const { cartCount: pendingCount } = useCart()
+  const navigate = useNavigate()
+  
   useEffect(() => {
     async function fetchRooms() {
       const { data, error } = await supabase.from('rooms').select('*')
@@ -26,6 +30,11 @@ export default function Rooms() {
           <Link to="/rooms">Rooms</Link>
           <Link to="/amenities">Amenities</Link>
           <Link to="/my-booking">My Booking</Link>
+          {pendingCount > 0 && (
+            <Link to="/checkout" className="nav-pending">
+              Pending <span className="nav-pending-badge">{pendingCount}</span>
+            </Link>
+          )}
         </div>
         <button
           className={`hamburger ${menuOpen ? 'open' : ''}`}
@@ -42,6 +51,11 @@ export default function Rooms() {
         <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
         <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
         <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
+        {pendingCount > 0 && (
+          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
+            Pending ({pendingCount})
+          </Link>
+        )}
       </div>
 
       <div className="page-content">
@@ -70,7 +84,16 @@ export default function Rooms() {
                       <span key={a} className="amenity-tag">{a}</span>
                     ))}
                   </div>
-                  <p className="room-capacity">Up to {room.capacity} guests</p>
+                  <div className="room-detail-footer">
+                    <p className="room-capacity">Up to {room.capacity} guests</p>
+                    <button
+                      className="btn-primary"
+                      style={{ fontSize: '0.75rem' }}
+                      onClick={() => navigate(`/book?room=${encodeURIComponent(room.name)}`)}
+                    >
+                      Book Now
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
