@@ -1421,3 +1421,12 @@ body {
 .checkout-ref-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 0.4rem 1.2rem; font-weight: 600; font-size: 1rem; letter-spacing: 0.05em; }
 .checkout-ref-note { font-size: 0.85rem; color: var(--muted); max-width: 380px; margin: 0 auto; }
 .checkout-empty { text-align: center; padding: 3rem 1rem; }
+
+.bookings-list { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
+.bookings-count { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+.booking-result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.booking-result-header h2 { margin: 0; font-size: 1.1rem; }
+.status-badge { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 99px; }
+.status-confirmed { background: #e8f5e9; color: #2e7d32; }
+.status-pending { background: #fff8e1; color: #f57f17; }
+.status-cancelled { background: #fce4ec; color: #c62828; }

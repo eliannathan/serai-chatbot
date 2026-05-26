@@ -4,30 +4,32 @@ import { supabase } from '../supabase'
 import { useCart } from "../context/CartContext"
 
 export default function MyBooking() {
-  const [ref, setRef] = useState('')
   const [email, setEmail] = useState('')
-  const [booking, setBooking] = useState(null)
+  const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { cartCount: pendingCount } = useCart()
 
   async function handleLookup() {
     setLoading(true)
     setError('')
-    setBooking(null)
+    setBookings([])
+    setSearched(false)
 
     const { data, error: err } = await supabase
       .from('bookings')
       .select('*, rooms(name, type)')
-      .eq('booking_ref', ref.trim().toUpperCase())
       .eq('guest_email', email.trim().toLowerCase())
-      .single()
+      .order('check_in', { ascending: true })
 
-    if (err || !data) {
-      setError('No booking found. Please check your reference and email.')
+    setSearched(true)
+
+    if (err || !data || data.length === 0) {
+      setError('No bookings found for this email address.')
     } else {
-      setBooking(data)
+      setBookings(data)
     }
     setLoading(false)
   }
@@ -70,40 +72,42 @@ export default function MyBooking() {
 
       <div className="page-content narrow">
         <h1 className="page-title">My Booking</h1>
-        <p className="page-sub">Enter your booking reference and email to view your reservation.</p>
+        <p className="page-sub">Enter your email to view all your reservations.</p>
 
         <div className="booking-form">
-          <input
-            placeholder="Booking reference (e.g. SR-2847)"
-            value={ref}
-            onChange={e => setRef(e.target.value)}
-            className="input"
-          />
           <input
             placeholder="Email address"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLookup()}
             className="input"
           />
-          <button onClick={handleLookup} className="btn-primary" disabled={loading}>
-            {loading ? 'Looking up...' : 'Find My Booking'}
+          <button onClick={handleLookup} className="btn-primary" disabled={loading || !email.trim()}>
+            {loading ? 'Looking up...' : 'Find My Bookings'}
           </button>
         </div>
 
         {error && <p className="error-msg">{error}</p>}
 
-        {booking && (
-          <div className="booking-result">
-            <h2>{booking.rooms?.name}</h2>
-            <div className="booking-details">
-              <div><span>Reference</span><strong>{booking.booking_ref}</strong></div>
-              <div><span>Guest</span><strong>{booking.guest_name}</strong></div>
-              <div><span>Check-in</span><strong>{booking.check_in}</strong></div>
-              <div><span>Check-out</span><strong>{booking.check_out}</strong></div>
-              <div><span>Total</span><strong>${booking.total_price}</strong></div>
-              <div><span>Status</span><strong className={`status-${booking.status}`}>{booking.status}</strong></div>
-            </div>
+        {bookings.length > 0 && (
+          <div className="bookings-list">
+            <p className="bookings-count">{bookings.length} booking{bookings.length > 1 ? 's' : ''} found</p>
+            {bookings.map(booking => (
+              <div key={booking.booking_ref} className="booking-result">
+                <div className="booking-result-header">
+                  <h2>{booking.rooms?.name}</h2>
+                  <span className={`status-badge status-${booking.status}`}>{booking.status}</span>
+                </div>
+                <div className="booking-details">
+                  <div><span>Reference</span><strong>{booking.booking_ref}</strong></div>
+                  <div><span>Guest</span><strong>{booking.guest_name}</strong></div>
+                  <div><span>Check-in</span><strong>{booking.check_in}</strong></div>
+                  <div><span>Check-out</span><strong>{booking.check_out}</strong></div>
+                  <div><span>Total</span><strong>${booking.total_price}</strong></div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

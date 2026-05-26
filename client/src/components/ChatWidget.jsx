@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
 import BookingFlow from './BookingFlow'
 import { useNavigate } from 'react-router-dom'
+import { useCart } from '../context/CartContext'
 
 const MIN_W = 280, MIN_H = 400, MAX_W = 600, MAX_H = 700
 
@@ -11,6 +12,7 @@ export default function ChatWidget({ persona }) {
   const storageKey = `serai_chat_${persona?.id || 'visitor'}`
   const [showBookingFlow, setShowBookingFlow] = useState(false)
   const navigate = useNavigate()
+  const { cart, cartCount } = useCart()
 
   const [messages, setMessages] = useState(() => {
     const saved = sessionStorage.getItem(storageKey)
@@ -50,6 +52,22 @@ export default function ChatWidget({ persona }) {
   const panelRef = useRef(null)
   const mobileScrollRef = useRef(null)
   const resizing = useRef(null)
+
+  const [nudgeSent, setNudgeSent] = useState(false)
+
+  useEffect(() => {
+    if (open && cartCount > 0 && !nudgeSent && messages.length <= 1) {
+      const timer = setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `I noticed you have ${cartCount} room${cartCount > 1 ? 's' : ''} waiting in your cart 🛒 Ready to complete your booking?`,
+          actions: [{ label: '🛒 Go to Checkout', path: '/checkout' }]
+        }])
+        setNudgeSent(true)
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [open, cartCount, nudgeSent])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -111,7 +129,18 @@ export default function ChatWidget({ persona }) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, persona })
+        body: JSON.stringify({ 
+          messages: apiMessages, 
+          persona,
+          cart: cart.map(item => ({
+            room: item.room?.name,
+            checkIn: item.checkIn,
+            checkOut: item.checkOut,
+            nights: item.nights,
+            total: item.total,
+            addOns: item.addOns?.map(a => a?.label).filter(Boolean)
+          }))
+        })
       })
 
       const data = await res.json()
@@ -131,6 +160,7 @@ export default function ChatWidget({ persona }) {
             GO_ROOMS: { label: '🛏️ Browse Rooms', path: '/rooms' },
             GO_BOOKING: { label: '📋 My Booking', path: '/my-booking' },
             GO_AMENITIES: { label: '🌿 Amenities', path: '/amenities' },
+            GO_CHECKOUT: { label: '🛒 Go to Checkout', path: '/checkout' },
             SHOW_BOOKING: { label: '📋 View My Booking', path: '/my-booking' },
             CONTACT_TEAM: { label: '📧 Contact Team', path: null, email: 'reservations@serairetreat.com' },
           }

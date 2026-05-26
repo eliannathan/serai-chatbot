@@ -23,6 +23,8 @@ export default function BookPage() {
 
   const preselected = searchParams.get('room')
 
+  const [added, setAdded] = useState(false)
+
   const [step, setStep] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState(
     ROOMS.find(r => r.name === preselected) || null
@@ -60,15 +62,11 @@ export default function BookPage() {
   function handleAddToPending() {
     addToCart({
       room: selectedRoom,
-      checkIn,
-      checkOut,
-      numGuests,
-      nights,
+      checkIn, checkOut, numGuests, nights,
       addOns: selectedAddOns.map(id => ADD_ONS.find(a => a.id === id)),
-      specialRequests,
-      total,
+      specialRequests, total,
     })
-    navigate('/checkout')
+    setAdded(true)
   }
 
   return (
@@ -229,7 +227,7 @@ export default function BookPage() {
         )}
 
         {/* Step 4 — Review */}
-        {step === 4 && (
+        {step === 4 && !added && (
           <div className="booking-section">
             <p className="booking-section-title">Review your booking</p>
             <div className="booking-review">
@@ -254,6 +252,20 @@ export default function BookPage() {
               <button className="btn-primary" onClick={handleAddToPending}>
                 Add to Pending 🛒
               </button>
+            </div>
+          </div>
+        )}
+        {/* Added confirmation */}
+        {added && (
+          <div className="booking-section" style={{ textAlign: 'center', padding: '2rem 0' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✓</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Added to Pending!</h2>
+            <p style={{ color: 'var(--muted)', marginBottom: '2rem' }}>
+              Your room has been saved. What would you like to do next?
+            </p>
+            <div className="booking-actions" style={{ justifyContent: 'center', gap: '1rem' }}>
+              <Link to="/" className="btn-secondary">← Back to Home</Link>
+              <Link to="/checkout" className="btn-primary">Proceed to Checkout →</Link>
             </div>
           </div>
         )}
