@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { ROOMS } from '../data/rooms'
@@ -9,13 +9,23 @@ function isValidEmail(email) {
 }
 
 // 6-step progress: input on steps 1–5, success screen on step 6.
-const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Guest Info', 'Review', 'Confirm']
+// Labels kept short (≤7 chars) so the row fits in the ~340px chat widget.
+const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Info', 'Review', 'Confirm']
 
 export default function BookingFlow({ persona, onComplete, onCancel }) {
   const navigate = useNavigate()
   const { addToCart, cartFull, maxCartItems } = useCart()
 
   const [step, setStep] = useState(1)
+  // Scroll container ref — reset to top when advancing steps so users always
+  // land at the top of the new step's content (not halfway down a long form).
+  const containerRef = useRef(null)
+
+  function advanceTo(n) {
+    setStep(n)
+    if (containerRef.current) containerRef.current.scrollTop = 0
+  }
+
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
@@ -62,7 +72,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
       return
     }
     setGuestInfoError('')
-    setStep(5)
+    advanceTo(5)
   }
 
   function handleAddToPending() {
@@ -86,7 +96,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
     })
 
     if (added) {
-      setStep(6)
+      advanceTo(6)
       onComplete?.(selectedRoom?.name)
     }
   }
@@ -100,7 +110,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
   // ─── Step 6 — Success: Added to Pending ────────────────────────────────
   if (step === 6) {
     return (
-      <div className="booking-flow">
+      <div className="booking-flow" ref={containerRef}>
         <div className="booking-progress">
           {STEP_LABELS.map(label => (
             <div key={label} className="booking-step-dot done">
@@ -161,7 +171,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
           </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={onCancel}>Cancel</button>
-            <button className="btn-primary" onClick={() => setStep(2)} disabled={!selectedRoom}>
+            <button className="btn-primary" onClick={() => advanceTo(2)} disabled={!selectedRoom}>
               Next →
             </button>
           </div>
@@ -225,7 +235,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
             <button className="booking-cancel" onClick={() => setStep(1)}>← Back</button>
             <button
               className="btn-primary"
-              onClick={() => setStep(3)}
+              onClick={() => advanceTo(3)}
               disabled={!checkIn || !checkOut || nights < 1}
             >
               Next →
@@ -263,7 +273,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
           )}
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(2)}>← Back</button>
-            <button className="btn-primary" onClick={() => setStep(4)}>Next →</button>
+            <button className="btn-primary" onClick={() => advanceTo(4)}>Next →</button>
           </div>
         </div>
       )}

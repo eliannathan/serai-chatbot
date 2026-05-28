@@ -1051,15 +1051,20 @@ body {
   z-index: 20;
   background: var(--white);
   border-radius: var(--radius-lg);
-  overflow-y: auto;
+  /* Scrolling happens on .booking-flow below, so its ref-based scrollTop reset
+     between steps actually targets the right element. */
+  overflow: hidden;
 }
 
 .booking-flow {
-  padding: 1.25rem;
+  /* Fixed 16px padding on all sides — keeps content off the widget border edges
+     consistently regardless of widget width. */
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   height: 100%;
+  overflow-y: auto;
 }
 
 .booking-progress {
@@ -1107,6 +1112,29 @@ body {
   background: var(--sage);
   border-color: var(--sage);
   color: white;
+}
+
+/* Compact progress row scoped to the in-chat BookingFlow (~340px wide).
+   BookPage uses the same .booking-progress class at full page width, so we
+   only shrink things when nested inside .booking-flow. space-between (not
+   center) keeps step 1 from being clipped if content does grow past the panel. */
+.booking-flow .booking-progress {
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding-bottom: 0.75rem;
+}
+
+.booking-flow .booking-step-dot { gap: 0.2rem; flex: 0 0 auto; }
+
+.booking-flow .booking-step-dot span {
+  width: 22px;
+  height: 22px;
+  font-size: 0.65rem;
+}
+
+.booking-flow .booking-step-dot p {
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
 }
 
 .booking-section { display: flex; flex-direction: column; gap: 0.85rem; }
