@@ -1,20 +1,20 @@
 import { useState } from 'react'
-import { supabase } from '../supabase'
+import { useNavigate } from 'react-router-dom'
+import { useCart } from '../context/CartContext'
 import { ROOMS } from '../data/rooms'
 import { ADD_ONS } from '../data/addons'
 
-function generateRef() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const bytes = new Uint8Array(6)
-  crypto.getRandomValues(bytes)
-  return 'SR-' + Array.from(bytes, b => chars[b % chars.length]).join('')
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-// Step indices:
-//   1 = Room, 2 = Dates, 3 = Add-ons, 4 = Review, 5 = Confirmation
-const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Review']
+// 6-step progress: input on steps 1–5, success screen on step 6.
+const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Guest Info', 'Review', 'Confirm']
 
 export default function BookingFlow({ persona, onComplete, onCancel }) {
+  const navigate = useNavigate()
+  const { addToCart, cartFull, maxCartItems } = useCart()
+
   const [step, setStep] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [checkIn, setCheckIn] = useState('')
@@ -22,9 +22,16 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
   const [numGuests, setNumGuests] = useState(1)
   const [selectedAddOns, setSelectedAddOns] = useState([])
   const [specialRequests, setSpecialRequests] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [confirmed, setConfirmed] = useState(null)
-  const [error, setError] = useState('')
+
+  // Pre-fill name/email from persona when it's a named demo guest.
+  // The visitor persona has no booking, so we leave the fields blank.
+  const [guestName, setGuestName] = useState(
+    persona?.name && persona.id !== 'visitor' ? persona.name : ''
+  )
+  const [guestEmail, setGuestEmail] = useState(
+    persona?.email && persona.id !== 'visitor' ? persona.email : ''
+  )
+  const [guestInfoError, setGuestInfoError] = useState('')
 
   // Noon anchor avoids DST edge-case miscounts (consistent with BookPage)
   const nights = checkIn && checkOut
@@ -45,69 +52,77 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
     )
   }
 
-  async function handleConfirm() {
-    setLoading(true)
-    setError('')
-    try {
-      const { data: roomData, error: roomError } = await supabase
-        .from('rooms')
-        .select('id')
-        .eq('name', selectedRoom.name)
-        .single()
-
-      if (roomError || !roomData) throw new Error('Room lookup failed')
-
-      const ref = generateRef()
-      const { error: insertError } = await supabase.from('bookings').insert({
-        booking_ref: ref,
-        guest_name: persona?.name || 'Guest',
-        guest_email: persona?.email || 'guest@demo.com',
-        room_id: roomData.id,
-        check_in: checkIn,
-        check_out: checkOut,
-        num_guests: numGuests,
-        total_price: total,
-        status: 'confirmed',
-        special_requests: specialRequests || null,
-        add_ons: selectedAddOns
-          .map(id => ADD_ONS.find(a => a.id === id)?.label)
-          .filter(Boolean),
-        protected: false,
-        expires_at: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-      })
-
-      if (insertError) throw insertError
-
-      setConfirmed(ref)
-      setStep(5)
-      onComplete?.(ref)
-    } catch (err) {
-      console.error(err)
-      setError('Unable to confirm booking. Please try again.')
+  function handleGuestInfoNext() {
+    if (!guestName.trim()) {
+      setGuestInfoError('Please enter your full name.')
+      return
     }
-    setLoading(false)
+    if (!isValidEmail(guestEmail)) {
+      setGuestInfoError('Please enter a valid email address.')
+      return
+    }
+    setGuestInfoError('')
+    setStep(5)
   }
 
-  // ─── Step 5 — Confirmation ──────────────────────────────────────────────
-  if (step === 5 && confirmed) {
+  function handleAddToPending() {
+    if (cartFull) return
+
+    // Add to cart instead of inserting into Supabase. Checkout.jsx is the only
+    // place that talks to the bookings table — it sets expires_at and the rest
+    // of the DB fields when the order is finalised.
+    const added = addToCart({
+      room:            selectedRoom,
+      checkIn,
+      checkOut,
+      numGuests,
+      nights,
+      addOns:          selectedAddOns.map(id => ADD_ONS.find(a => a.id === id)).filter(Boolean),
+      specialRequests,
+      total,
+      // Carry guest info so Checkout.jsx can pre-fill its name/email fields
+      guestName:  guestName.trim(),
+      guestEmail: guestEmail.trim().toLowerCase(),
+    })
+
+    if (added) {
+      setStep(6)
+      onComplete?.(selectedRoom?.name)
+    }
+  }
+
+  function handleGoToCheckout() {
+    // Close the overlay first so it doesn't linger over /checkout after navigation
+    onCancel?.()
+    navigate('/checkout')
+  }
+
+  // ─── Step 6 — Success: Added to Pending ────────────────────────────────
+  if (step === 6) {
     return (
       <div className="booking-flow">
+        <div className="booking-progress">
+          {STEP_LABELS.map(label => (
+            <div key={label} className="booking-step-dot done">
+              <span>✓</span>
+              <p>{label}</p>
+            </div>
+          ))}
+        </div>
         <div className="booking-confirmed">
-          <span className="booking-confirmed-icon">🌿</span>
-          <h3>Booking Confirmed!</h3>
-          <p>We look forward to welcoming you to Serai Retreat.</p>
+          <span className="booking-confirmed-icon">🛒</span>
+          <h3>Added to Pending!</h3>
+          <p>{selectedRoom?.name} is saved to your cart.</p>
           <div className="booking-ref-box">
-            <span>Reference</span>
-            <strong>{confirmed}</strong>
+            <span>Total</span>
+            <strong>${total}</strong>
           </div>
-          <div className="booking-summary-mini">
-            <div><span>Room</span><strong>{selectedRoom?.name}</strong></div>
-            <div><span>Check-in</span><strong>{checkIn}</strong></div>
-            <div><span>Check-out</span><strong>{checkOut}</strong></div>
-            <div><span>Guests</span><strong>{numGuests}</strong></div>
-            <div><span>Total</span><strong>${total}</strong></div>
+          <div className="booking-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
+            <button className="booking-cancel" onClick={onCancel}>Close</button>
+            <button className="btn-primary" onClick={handleGoToCheckout}>
+              Go to Checkout →
+            </button>
           </div>
-          <button className="btn-primary" onClick={onCancel}>Done</button>
         </div>
       </div>
     )
@@ -115,7 +130,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
 
   return (
     <div className="booking-flow">
-      {/* Progress — 4 steps */}
+      {/* Progress — 6 steps */}
       <div className="booking-progress">
         {STEP_LABELS.map((label, i) => (
           <div key={label} className={`booking-step-dot ${step > i + 1 ? 'done' : step === i + 1 ? 'active' : ''}`}>
@@ -125,7 +140,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
         ))}
       </div>
 
-      {/* ─── Step 1 — Room Selection ──────────────────────────────────── */}
+      {/* ─── Step 1 — Room ──────────────────────────────────────────────── */}
       {step === 1 && (
         <div className="booking-section">
           <p className="booking-section-title">Which room calls to you?</p>
@@ -153,9 +168,9 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
         </div>
       )}
 
-      {/* ─── Step 2 — Dates + Guests ──────────────────────────────────── */}
-      {/* Date inputs stack vertically (no `booking-date-row`) — the chat */}
-      {/* widget is too narrow to render them side-by-side comfortably.    */}
+      {/* ─── Step 2 — Dates + Guests ───────────────────────────────────── */}
+      {/* Date inputs stack vertically (no `booking-date-row`) — the chat   */}
+      {/* widget is too narrow to render them side-by-side comfortably.     */}
       {step === 2 && (
         <div className="booking-section">
           <p className="booking-section-title">When are you planning to visit?</p>
@@ -219,7 +234,7 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
         </div>
       )}
 
-      {/* ─── Step 3 — Add-ons ─────────────────────────────────────────── */}
+      {/* ─── Step 3 — Add-ons ──────────────────────────────────────────── */}
       {step === 3 && (
         <div className="booking-section">
           <p className="booking-section-title">Enhance your stay</p>
@@ -248,18 +263,52 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
           )}
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(2)}>← Back</button>
-            <button className="btn-primary" onClick={() => setStep(4)}>Review →</button>
+            <button className="btn-primary" onClick={() => setStep(4)}>Next →</button>
           </div>
         </div>
       )}
 
-      {/* ─── Step 4 — Review + Confirm ────────────────────────────────── */}
+      {/* ─── Step 4 — Guest Info ───────────────────────────────────────── */}
       {step === 4 && (
+        <div className="booking-section">
+          <p className="booking-section-title">Your details</p>
+          <div className="booking-field">
+            <label>Full Name</label>
+            <input
+              type="text"
+              value={guestName}
+              onChange={e => setGuestName(e.target.value)}
+              placeholder="Your name"
+              className="input"
+              autoComplete="name"
+            />
+          </div>
+          <div className="booking-field">
+            <label>Email</label>
+            <input
+              type="email"
+              value={guestEmail}
+              onChange={e => setGuestEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="input"
+              autoComplete="email"
+            />
+          </div>
+          {guestInfoError && <p className="error-msg">{guestInfoError}</p>}
+          <div className="booking-actions">
+            <button className="booking-cancel" onClick={() => setStep(3)}>← Back</button>
+            <button className="btn-primary" onClick={handleGuestInfoNext}>
+              Review →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Step 5 — Review ───────────────────────────────────────────── */}
+      {step === 5 && (
         <div className="booking-section">
           <p className="booking-section-title">Review your request</p>
           <div className="booking-review">
-            <div><span>Guest</span><strong>{persona?.name || 'Guest'}</strong></div>
-            <div><span>Email</span><strong>{persona?.email || '—'}</strong></div>
             <div><span>Room</span><strong>{selectedRoom?.name}</strong></div>
             <div><span>Check-in</span><strong>{checkIn}</strong></div>
             <div><span>Check-out</span><strong>{checkOut}</strong></div>
@@ -274,13 +323,23 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
               </div>
             )}
             <div><span>Total</span><strong>${total}</strong></div>
+            <div><span>Name</span><strong>{guestName}</strong></div>
+            <div><span>Email</span><strong>{guestEmail}</strong></div>
             {specialRequests && <div><span>Requests</span><strong>{specialRequests}</strong></div>}
           </div>
-          {error && <p className="error-msg" style={{ marginTop: '0.75rem' }}>{error}</p>}
+          {cartFull && (
+            <p className="error-msg" style={{ marginTop: '0.75rem' }}>
+              Cart is full ({maxCartItems} items max). Please check out before adding more.
+            </p>
+          )}
           <div className="booking-actions">
-            <button className="booking-cancel" onClick={() => setStep(3)}>← Back</button>
-            <button className="btn-primary" onClick={handleConfirm} disabled={loading}>
-              {loading ? 'Confirming...' : 'Confirm Booking 🌿'}
+            <button className="booking-cancel" onClick={() => setStep(4)}>← Back</button>
+            <button
+              className="btn-primary"
+              onClick={handleAddToPending}
+              disabled={cartFull}
+            >
+              Add to Pending 🛒
             </button>
           </div>
         </div>

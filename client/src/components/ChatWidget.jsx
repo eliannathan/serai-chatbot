@@ -313,12 +313,15 @@ export default function ChatWidget({ persona }) {
 
   // BookingFlow callbacks — kept as plain functions since BookingOverlay is
   // now a stable component type and will only re-render (not remount) on prop changes.
-  function handleBookingComplete(ref) {
-    // Don't close the overlay here — BookingFlow shows a confirmation card (step 4).
-    // The user dismisses it with "Done", which calls handleBookingCancel.
+  function handleBookingComplete(roomName) {
+    // BookingFlow now adds to the pending cart (not Supabase). It shows its own
+    // "Added to Pending!" screen with a Go to Checkout button; we drop a chat
+    // message + checkout action as a fallback in case the user closes the overlay
+    // without navigating.
     setMessages(prev => [...prev, {
       role: 'assistant',
-      content: `Your booking is confirmed! 🌿 Reference: **${ref}**. You can look it up anytime under My Booking.`
+      content: `${roomName} added to your cart 🛒 You can head to checkout when you're ready to confirm.`,
+      actions: [ACTION_MAP.GO_CHECKOUT]
     }])
   }
 

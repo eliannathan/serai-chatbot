@@ -34,8 +34,17 @@ function isValidEmail(email) {
 
 export default function Checkout() {
   const { cart, clearCart, cartCount } = useCart()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  // Pre-fill from any cart item that carries guest info (e.g. items added via the
+  // chat-widget BookingFlow). Initializer runs once on mount, so user edits aren't
+  // clobbered if the cart updates later.
+  const [name, setName] = useState(() => {
+    const item = cart.find(i => i.guestName)
+    return item?.guestName || ''
+  })
+  const [email, setEmail] = useState(() => {
+    const item = cart.find(i => i.guestEmail)
+    return item?.guestEmail || ''
+  })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [refs, setRefs] = useState([])
