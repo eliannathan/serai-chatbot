@@ -82,6 +82,19 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { messages, persona } = req.body
 
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Invalid request' })
+    }
+
+    // Mirror production chat.js: cap history and sanitize user content
+    const recentMessages = messages.slice(-20)
+    const sanitizedMessages = recentMessages
+      .map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: typeof m.content === 'string' ? m.content.trim().slice(0, 2000) : ''
+      }))
+      .filter(m => m.content)
+
     // Fetch live booking from Supabase
     const booking = await getBookingContext(persona?.ref, persona?.email)
 
@@ -93,7 +106,7 @@ app.post('/api/chat', async (req, res) => {
       max_tokens: 1024,
       messages: [
         { role: 'system', content: systemPrompt },
-        ...messages
+        ...sanitizedMessages
       ]
     })
 

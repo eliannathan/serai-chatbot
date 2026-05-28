@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCart } from "../context/CartContext"
-
-const ROOMS = [
-  { name: 'Jungle Suite', price: 120, desc: 'Garden view · King bed · Private outdoor shower', capacity: 2 },
-  { name: 'Terrace Villa', price: 220, desc: 'Rice terrace view · King bed · Private plunge pool', capacity: 2 },
-  { name: 'Retreat Villa', price: 380, desc: 'Panoramic view · King bed · Private infinity pool', capacity: 4 },
-]
-
-const ADD_ONS = [
-  { id: 'airport', label: 'Airport Transfer', price: 45, unit: 'one-way' },
-  { id: 'spa', label: 'Balinese Spa Treatment', price: 35, unit: 'per session' },
-  { id: 'cooking', label: 'Cooking Class', price: 25, unit: 'per person' },
-  { id: 'yoga', label: 'Private Yoga Session', price: 20, unit: 'per session' },
-]
+import { ROOMS } from '../data/rooms'
+import { ADD_ONS } from '../data/addons'
+import NavBar from '../components/NavBar'
 
 export default function BookPage() {
   const [searchParams] = useSearchParams()
   const { addToCart } = useCart()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   const preselected = searchParams.get('room')
 
@@ -70,29 +59,7 @@ export default function BookPage() {
 
   return (
     <div className="page">
-      <nav className="nav">
-        <Link to="/" className="nav-logo">SERAI</Link>
-        <div className="nav-links">
-          <Link to="/rooms">Rooms</Link>
-          <Link to="/amenities">Amenities</Link>
-          <Link to="/my-booking">My Booking</Link>
-        </div>
-        <button
-          className={`hamburger ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Menu"
-        >
-          <span /><span /><span />
-        </button>
-      </nav>
-
-      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
-        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
-        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
-        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
-      </div>
+      <NavBar />
 
       <div className="page-content" style={{ maxWidth: 680 }}>
         <h1 className="page-title">Book Your Stay</h1>

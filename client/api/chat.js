@@ -112,8 +112,25 @@ const CART_SECTION = (cart) => cart?.length > 0 ? `
 
 ## Guest Cart (pending checkout)
 The guest has ${cart.length} item${cart.length > 1 ? 's' : ''} in their cart waiting to be checked out:
-${cart.map((item, i) => `${i + 1}. ${item.room} — ${item.checkIn} to ${item.checkOut} (${item.nights} nights)${item.addOns?.length > 0 ? `, Add-ons: ${item.addOns.join(', ')}` : ''} — $${item.total}`).join('\n')}
+${cart.map((item, i) => {
+  const room    = sanitizeCartText(item.room)
+  const checkIn = sanitizeCartText(item.checkIn)
+  const checkOut= sanitizeCartText(item.checkOut)
+  const nights  = Number(item.nights) || 0
+  const total   = Number(item.total)  || 0
+  const addOns  = item.addOns?.length > 0
+    ? `, Add-ons: ${item.addOns.map(sanitizeCartText).join(', ')}`
+    : ''
+  return `${i + 1}. ${room} — ${checkIn} to ${checkOut} (${nights} nights)${addOns} — $${total}`
+}).join('\n')}
 If relevant, gently remind the guest they have pending items and can complete their booking at checkout. Don't mention it if they're asking about something unrelated.` : ''
+
+// Strip characters that could inject prompt instructions via user-controlled cart data.
+// Newlines and markdown headers are the main risk vectors inside a system prompt.
+function sanitizeCartText(value) {
+  if (typeof value !== 'string') return String(value ?? '')
+  return value.replace(/[\r\n#`\\]/g, ' ').trim().slice(0, 100)
+}
 
 function sanitizeInput(text) {
   if (typeof text !== 'string') return ''
@@ -149,6 +166,13 @@ function checkRateLimit(ip) {
   const entry = rateLimitMap.get(ip)
   if (!entry || now - entry.timestamp > RATE_LIMIT_WINDOW) {
     rateLimitMap.set(ip, { count: 1, timestamp: now })
+    // Prune expired entries when the map grows large to prevent unbounded memory growth.
+    // Only runs occasionally so the iteration cost is amortised across many requests.
+    if (rateLimitMap.size > 5000) {
+      for (const [key, val] of rateLimitMap) {
+        if (now - val.timestamp > RATE_LIMIT_WINDOW) rateLimitMap.delete(key)
+      }
+    }
     return true
   }
   if (entry.count >= RATE_LIMIT_MAX) return false

@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
-import { useCart } from "../context/CartContext"
+import NavBar from '../components/NavBar'
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -12,8 +11,6 @@ export default function MyBooking() {
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const { cartCount: pendingCount } = useCart()
 
   async function handleLookup() {
     if (!isValidEmail(email)) {
@@ -26,7 +23,7 @@ export default function MyBooking() {
 
     const { data, error: err } = await supabase
       .from('bookings')
-      .select('*, rooms(name, type)')
+      .select('booking_ref, guest_name, check_in, check_out, total_price, status, rooms(name, type)')
       .eq('guest_email', email.trim().toLowerCase())
       .order('check_in', { ascending: true })
 
@@ -40,39 +37,7 @@ export default function MyBooking() {
 
   return (
     <div className="page">
-      <nav className="nav">
-        <Link to="/" className="nav-logo">SERAI</Link>
-        <div className="nav-links">
-          <Link to="/rooms">Rooms</Link>
-          <Link to="/amenities">Amenities</Link>
-          <Link to="/my-booking">My Booking</Link>
-          {pendingCount > 0 && (
-            <Link to="/checkout" className="nav-pending">
-              Pending <span className="nav-pending-badge">{pendingCount}</span>
-            </Link>
-          )}
-        </div>
-        <button
-          className={`hamburger ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Menu"
-        >
-          <span /><span /><span />
-        </button>
-      </nav>
-
-      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
-        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
-        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
-        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
-        {pendingCount > 0 && (
-          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
-            Pending ({pendingCount})
-          </Link>
-        )}
-      </div>
+      <NavBar />
 
       <div className="page-content narrow">
         <h1 className="page-title">My Booking</h1>

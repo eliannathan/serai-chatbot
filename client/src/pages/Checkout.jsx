@@ -2,9 +2,30 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { supabase } from '../supabase'
+import NavBar from '../components/NavBar'
+
+// 32-char alphabet (no ambiguous chars: 0/O, 1/I/L).
+// 32^6 ≈ 1 billion combinations — collision-resistant without a DB round-trip loop.
+const REF_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 function generateRef() {
-  return 'SR-' + Math.floor(1000 + Math.random() * 9000)
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return 'SR-' + Array.from(bytes, b => REF_CHARS[b % REF_CHARS.length]).join('')
+}
+
+// Generate `count` refs and validate all of them in one batch query.
+// This avoids both the N+1 round-trip pattern and the TOCTOU race of the old
+// check-then-insert loop. The DB unique constraint remains the hard safety net.
+async function generateUniqueRefs(count) {
+  const refs = Array.from({ length: count }, generateRef)
+  const { data: existing } = await supabase
+    .from('bookings')
+    .select('booking_ref')
+    .in('booking_ref', refs)
+  const taken = new Set(existing?.map(r => r.booking_ref) ?? [])
+  // Regenerate any (astronomically unlikely) collisions
+  return refs.map(ref => taken.has(ref) ? generateRef() : ref)
 }
 
 function isValidEmail(email) {
@@ -13,7 +34,6 @@ function isValidEmail(email) {
 
 export default function Checkout() {
   const { cart, clearCart, cartCount } = useCart()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -23,20 +43,6 @@ export default function Checkout() {
 
   const addOnLabels = (addOns) => addOns?.map(a => a?.label).filter(Boolean).join(', ') || '—'
   const grandTotal = cart.reduce((sum, item) => sum + item.total, 0)
-
-  async function generateUniqueRef() {
-    let ref, exists
-    do {
-      ref = generateRef()
-      const { data } = await supabase
-        .from('bookings')
-        .select('booking_ref')
-        .eq('booking_ref', ref)
-        .single()
-      exists = !!data
-    } while (exists)
-    return ref
-  }
 
   async function handleFinishOrder() {
     if (!name.trim() || !isValidEmail(email)) {
@@ -58,24 +64,22 @@ export default function Checkout() {
 
       const roomMap = Object.fromEntries(roomsData.map(r => [r.name, r.id]))
 
-      // Build all inserts
-      const inserts = await Promise.all(cart.map(async (item) => {
-        const ref = await generateUniqueRef()
-        return {
-          booking_ref: ref,
-          guest_name: name.trim(),
-          guest_email: email.trim().toLowerCase(),
-          room_id: roomMap[item.room.name] || null,
-          check_in: item.checkIn,
-          check_out: item.checkOut,
-          num_guests: item.numGuests,
-          total_price: item.total,
-          status: 'confirmed',
-          special_requests: item.specialRequests || null,
-          add_ons: item.addOns?.map(a => a?.label).filter(Boolean) || [],
-          protected: false,
-          expires_at: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-        }
+      // Generate all refs in one batch check — avoids sequential N+1 and TOCTOU
+      const refs = await generateUniqueRefs(cart.length)
+      const inserts = cart.map((item, idx) => ({
+        booking_ref: refs[idx],
+        guest_name: name.trim(),
+        guest_email: email.trim().toLowerCase(),
+        room_id: roomMap[item.room.name] || null,
+        check_in: item.checkIn,
+        check_out: item.checkOut,
+        num_guests: item.numGuests,
+        total_price: item.total,
+        status: 'confirmed',
+        special_requests: item.specialRequests || null,
+        add_ons: item.addOns?.map(a => a?.label).filter(Boolean) || [],
+        protected: false,
+        expires_at: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
       }))
 
       const { error: insertError } = await supabase.from('bookings').insert(inserts)
@@ -94,29 +98,7 @@ export default function Checkout() {
 
   return (
     <div className="page">
-      <nav className="nav">
-        <Link to="/" className="nav-logo">SERAI</Link>
-        <div className="nav-links">
-          <Link to="/rooms">Rooms</Link>
-          <Link to="/amenities">Amenities</Link>
-          <Link to="/my-booking">My Booking</Link>
-        </div>
-        <button
-          className={`hamburger ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Menu"
-        >
-          <span /><span /><span />
-        </button>
-      </nav>
-
-      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
-        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
-        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
-        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
-      </div>
+      <NavBar />
 
       <div className="page-content" style={{ maxWidth: 680 }}>
         {done ? (

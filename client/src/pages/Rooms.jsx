@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import RoomCarousel from '../components/RoomCarousel'
 import { roomImages } from '../data/roomImages'
-import { useCart } from "../context/CartContext"
-import { useNavigate } from 'react-router-dom'
+import NavBar from '../components/NavBar'
 
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const { cartCount: pendingCount } = useCart()
+  const [fetchError, setFetchError] = useState(false)
   const navigate = useNavigate()
   
   useEffect(() => {
     async function fetchRooms() {
       const { data, error } = await supabase.from('rooms').select('*')
-      if (!error) setRooms(data)
+      if (error || !data) {
+        setFetchError(true)
+      } else {
+        setRooms(data)
+      }
       setLoading(false)
     }
     fetchRooms()
@@ -24,39 +26,7 @@ export default function Rooms() {
 
   return (
     <div className="page">
-      <nav className="nav">
-        <Link to="/" className="nav-logo">SERAI</Link>
-        <div className="nav-links">
-          <Link to="/rooms">Rooms</Link>
-          <Link to="/amenities">Amenities</Link>
-          <Link to="/my-booking">My Booking</Link>
-          {pendingCount > 0 && (
-            <Link to="/checkout" className="nav-pending">
-              Pending <span className="nav-pending-badge">{pendingCount}</span>
-            </Link>
-          )}
-        </div>
-        <button
-          className={`hamburger ${menuOpen ? 'open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Menu"
-        >
-          <span /><span /><span />
-        </button>
-      </nav>
-
-      <div className={`mobile-menu ${menuOpen ? 'open' : ''}`}>
-        <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
-        <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-        <Link to="/rooms" onClick={() => setMenuOpen(false)}>Rooms</Link>
-        <Link to="/amenities" onClick={() => setMenuOpen(false)}>Amenities</Link>
-        <Link to="/my-booking" onClick={() => setMenuOpen(false)}>My Booking</Link>
-        {pendingCount > 0 && (
-          <Link to="/checkout" onClick={() => setMenuOpen(false)}>
-            Pending ({pendingCount})
-          </Link>
-        )}
-      </div>
+      <NavBar />
 
       <div className="page-content">
         <h1 className="page-title">Our Rooms</h1>
@@ -64,6 +34,8 @@ export default function Rooms() {
 
         {loading ? (
           <p className="loading">Loading rooms...</p>
+        ) : fetchError ? (
+          <p className="error-msg">Unable to load rooms. Please refresh the page.</p>
         ) : (
           <div className="rooms-list">
             {rooms.map(room => (

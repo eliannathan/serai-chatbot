@@ -7,13 +7,126 @@ import { useCart } from '../context/CartContext'
 const MIN_W = 280, MIN_H = 400, MAX_W = 600, MAX_H = 700
 
 const ACTION_MAP = {
-  GO_ROOMS: { label: '🛏️ Browse Rooms', path: '/rooms' },
-  GO_BOOKING: { label: '📋 My Booking', path: '/my-booking' },
-  GO_AMENITIES: { label: '🌿 Amenities', path: '/amenities' },
-  GO_CHECKOUT: { label: '🛒 Go to Checkout', path: '/checkout' },
-  SHOW_BOOKING: { label: '📋 View My Booking', path: '/my-booking' },
-  CONTACT_TEAM: { label: '📧 Contact Team', path: null, email: 'reservations@serairetreat.com' },
+  GO_ROOMS:     { label: '🛏️ Browse Rooms',     path: '/rooms' },
+  GO_BOOKING:   { label: '📋 My Booking',        path: '/my-booking' },
+  GO_AMENITIES: { label: '🌿 Amenities',          path: '/amenities' },
+  GO_CHECKOUT:  { label: '🛒 Go to Checkout',     path: '/checkout' },
+  SHOW_BOOKING: { label: '📋 View My Booking',    path: '/my-booking' },
+  CONTACT_TEAM: { label: '📧 Contact Team',       path: null, email: 'reservations@serairetreat.com' },
 }
+
+// Escape HTML before injecting AI content — prevents XSS if the model ever
+// returns tags (e.g. via a successful prompt-injection attempt).
+function escapeHtml(str) {
+  if (typeof str !== 'string') return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
+function bubbleHTML(content) {
+  return {
+    __html: escapeHtml(content)
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br/>')
+  }
+}
+
+// ─── Subcomponents defined at module level ────────────────────────────────────
+// Keeping these outside ChatWidget means React sees stable component identities
+// between renders, so it never unmounts/remounts their DOM nodes. This preserves
+// textarea focus and avoids message-list flicker on every state change.
+
+function MessageList({ messages, loading, navigate, showBookingFlow, setShowBookingFlow, bottomRef }) {
+  return (
+    <>
+      {messages.map((m, i) => (
+        <div key={i} className={`chat-bubble-wrap ${m.role}`}>
+          <div
+            className={`chat-bubble ${m.role}`}
+            dangerouslySetInnerHTML={bubbleHTML(m.content)}
+          />
+          {m.actions?.length > 0 && (
+            <div className="chat-action-btns">
+              {m.actions.map(a => (
+                <button
+                  key={a.label}
+                  className="chat-action-btn"
+                  onClick={() => a.path ? navigate(a.path) : window.location.href = `mailto:${a.email}`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {m.showBookingBtn && !showBookingFlow && (
+            <button className="chat-action-btn primary" onClick={() => setShowBookingFlow(true)}>
+              🌿 Start Booking
+            </button>
+          )}
+        </div>
+      ))}
+      {loading && (
+        <div className="chat-bubble assistant">
+          <span className="chat-typing"><span /><span /><span /></span>
+        </div>
+      )}
+      <div ref={bottomRef} />
+    </>
+  )
+}
+
+function QuickReplies({ messages, quickReplies, handleQuickReply, loading, className }) {
+  if (messages.length > 2) return null
+  return (
+    <div className={className}>
+      {quickReplies.map(qr => (
+        <button
+          key={qr.label}
+          className="quick-reply-btn"
+          onClick={() => handleQuickReply(qr.message)}
+          disabled={loading}
+        >
+          {qr.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function InputRow({ input, setInput, handleKey, sendMessage, loading, isMobile, className }) {
+  return (
+    <div className={className}>
+      <textarea
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        placeholder="Ask Sari anything..."
+        className={`chat-input${isMobile ? ' chat-input-mobile' : ''}`}
+        rows={1}
+      />
+      <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
+    </div>
+  )
+}
+
+function BookingOverlay({ showBookingFlow, persona, onComplete, onCancel }) {
+  if (!showBookingFlow) return null
+  return (
+    <div className="booking-flow-overlay">
+      <BookingFlow
+        persona={persona}
+        onComplete={onComplete}
+        onCancel={onCancel}
+      />
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ChatWidget({ persona }) {
   const [open, setOpen] = useState(false)
@@ -54,21 +167,22 @@ export default function ChatWidget({ persona }) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Lock body scroll on mobile
+  // Lock body scroll on mobile.
+  // Save and restore previous values so we don't stomp on another overlay
+  // (e.g. the ImageGallery lightbox) that may have set overflow independently.
   useEffect(() => {
     if (open && isMobile) {
+      const prevOverflow = document.body.style.overflow
+      const prevPosition = document.body.style.position
+      const prevWidth    = document.body.style.width
       document.body.style.overflow = 'hidden'
       document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
-    } else {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
+      document.body.style.width    = '100%'
+      return () => {
+        document.body.style.overflow = prevOverflow
+        document.body.style.position = prevPosition
+        document.body.style.width    = prevWidth
+      }
     }
   }, [open, isMobile])
 
@@ -87,7 +201,7 @@ export default function ChatWidget({ persona }) {
     }
   }, [open, cartCount, nudgeSent, messages.length])
 
-  // Auto scroll
+  // Auto scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -197,115 +311,56 @@ export default function ChatWidget({ persona }) {
     setTimeout(() => sendMessageWithText(message), 0)
   }
 
+  // BookingFlow callbacks — kept as plain functions since BookingOverlay is
+  // now a stable component type and will only re-render (not remount) on prop changes.
+  function handleBookingComplete(ref) {
+    // Don't close the overlay here — BookingFlow shows a confirmation card (step 4).
+    // The user dismisses it with "Done", which calls handleBookingCancel.
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `Your booking is confirmed! 🌿 Reference: **${ref}**. You can look it up anytime under My Booking.`
+    }])
+  }
+
+  function handleBookingCancel() {
+    setShowBookingFlow(false)
+  }
+
   const quickReplies = persona?.room
     ? [
-        { label: '📋 View my booking', message: 'Can you pull up my booking details?' },
+        { label: '📋 View my booking',    message: 'Can you pull up my booking details?' },
         { label: '📅 Make a new booking', message: 'I want to book a room' },
-        { label: '💆 Spa hours', message: 'What are the spa hours?' },
+        { label: '💆 Spa hours',           message: 'What are the spa hours?' },
         { label: '📍 Things to do nearby', message: 'What are some local recommendations?' },
       ]
     : [
-        { label: '🛏️ View rooms', message: 'What rooms do you have available?' },
+        { label: '🛏️ View rooms',  message: 'What rooms do you have available?' },
         { label: '💰 Room prices', message: 'How much are the rooms?' },
         { label: '📅 Book a room', message: 'I want to book a room' },
-        { label: '🌿 Amenities', message: 'What amenities does the resort offer?' },
+        { label: '🌿 Amenities',   message: 'What amenities does the resort offer?' },
       ]
 
-  const bubbleHTML = (content) => ({
-    __html: content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br/>')
-  })
-
-  // Shared message list JSX
-  const MessageList = () => (
-    <>
-      {messages.map((m, i) => (
-        <div key={i} className={`chat-bubble-wrap ${m.role}`}>
-          <div className={`chat-bubble ${m.role}`} dangerouslySetInnerHTML={bubbleHTML(m.content)} />
-          {m.actions?.length > 0 && (
-            <div className="chat-action-btns">
-              {m.actions.map(a => (
-                <button
-                  key={a.label}
-                  className="chat-action-btn"
-                  onClick={() => a.path ? navigate(a.path) : window.location.href = `mailto:${a.email}`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          )}
-          {m.showBookingBtn && !showBookingFlow && (
-            <button className="chat-action-btn primary" onClick={() => setShowBookingFlow(true)}>
-              🌿 Start Booking
-            </button>
-          )}
-        </div>
-      ))}
-      {loading && (
-        <div className="chat-bubble assistant">
-          <span className="chat-typing"><span /><span /><span /></span>
-        </div>
-      )}
-      <div ref={bottomRef} />
-    </>
-  )
-
-  const QuickReplies = ({ className }) => (
-    messages.length <= 2 ? (
-      <div className={className}>
-        {quickReplies.map(qr => (
-          <button key={qr.label} className="quick-reply-btn" onClick={() => handleQuickReply(qr.message)} disabled={loading}>
-            {qr.label}
-          </button>
-        ))}
-      </div>
-    ) : null
-  )
-
-  const InputRow = ({ className }) => (
-    <div className={className}>
-      <textarea
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={handleKey}
-        placeholder="Ask Sari anything..."
-        className={`chat-input${isMobile ? ' chat-input-mobile' : ''}`}
-        rows={1}
-      />
-      <button onClick={sendMessage} disabled={loading || !input.trim()} className="chat-send">↑</button>
-    </div>
-  )
-
-  const BookingOverlay = () => (
-    showBookingFlow ? (
-      <div className="booking-flow-overlay">
-        <BookingFlow
-          persona={persona}
-          onComplete={(ref) => {
-            setShowBookingFlow(false)
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `Your booking request has been submitted! 🌿 Reference: **${ref}**. Our team will confirm within 24 hours at ${persona?.email || 'your email'}.`
-            }])
-          }}
-          onCancel={() => setShowBookingFlow(false)}
-        />
-      </div>
-    ) : null
-  )
-
   const handles = [
-    { dir: 'n',  style: { top: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 'n-resize' } },
-    { dir: 's',  style: { bottom: -6, left: -6, width: 'calc(100% + 12px)', height: 16, cursor: 's-resize' } },
-    { dir: 'e',  style: { right: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'e-resize' } },
-    { dir: 'w',  style: { left: -6, top: -6, height: 'calc(100% + 12px)', width: 16, cursor: 'w-resize' } },
-    { dir: 'ne', style: { top: -6, right: -6, width: 24, height: 24, cursor: 'ne-resize' } },
-    { dir: 'nw', style: { top: -6, left: -6, width: 24, height: 24, cursor: 'nw-resize' } },
-    { dir: 'se', style: { bottom: -6, right: -6, width: 24, height: 24, cursor: 'se-resize' } },
-    { dir: 'sw', style: { bottom: -6, left: -6, width: 24, height: 24, cursor: 'sw-resize' } },
+    { dir: 'n',  style: { top: -6,    left: -6,    width: 'calc(100% + 12px)', height: 16, cursor: 'n-resize'  } },
+    { dir: 's',  style: { bottom: -6, left: -6,    width: 'calc(100% + 12px)', height: 16, cursor: 's-resize'  } },
+    { dir: 'e',  style: { right: -6,  top: -6,     height: 'calc(100% + 12px)', width: 16, cursor: 'e-resize'  } },
+    { dir: 'w',  style: { left: -6,   top: -6,     height: 'calc(100% + 12px)', width: 16, cursor: 'w-resize'  } },
+    { dir: 'ne', style: { top: -6,    right: -6,   width: 24, height: 24, cursor: 'ne-resize' } },
+    { dir: 'nw', style: { top: -6,    left: -6,    width: 24, height: 24, cursor: 'nw-resize' } },
+    { dir: 'se', style: { bottom: -6, right: -6,   width: 24, height: 24, cursor: 'se-resize' } },
+    { dir: 'sw', style: { bottom: -6, left: -6,    width: 24, height: 24, cursor: 'sw-resize' } },
   ]
+
+  // Shared props bundles passed to the module-level subcomponents
+  const messageListProps = { messages, loading, navigate, showBookingFlow, setShowBookingFlow, bottomRef }
+  const quickRepliesProps = { messages, quickReplies, handleQuickReply, loading }
+  const inputRowProps = { input, setInput, handleKey, sendMessage, loading, isMobile }
+  const bookingOverlayProps = {
+    showBookingFlow,
+    persona,
+    onComplete: handleBookingComplete,
+    onCancel: handleBookingCancel,
+  }
 
   return (
     <>
@@ -317,8 +372,11 @@ export default function ChatWidget({ persona }) {
       {open && !isMobile && (
         <div ref={panelRef} className="chat-panel" style={{ width: size.w, height: size.h, resize: 'none' }}>
           {handles.map(h => (
-            <div key={h.dir} onMouseDown={(e) => startResize(e, h.dir)}
-              style={{ position: 'absolute', ...h.style, zIndex: 10, userSelect: 'none' }} />
+            <div
+              key={h.dir}
+              onMouseDown={(e) => startResize(e, h.dir)}
+              style={{ position: 'absolute', ...h.style, zIndex: 10, userSelect: 'none' }}
+            />
           ))}
           <div className="chat-inner">
             <div className="chat-header">
@@ -331,10 +389,12 @@ export default function ChatWidget({ persona }) {
               </div>
               <button onClick={() => setOpen(false)} className="chat-close">✕</button>
             </div>
-            <div className="chat-messages"><MessageList /></div>
-            <QuickReplies className="chat-quick-replies" />
-            <InputRow className="chat-input-row" />
-            <BookingOverlay />
+            <div className="chat-messages">
+              <MessageList {...messageListProps} />
+            </div>
+            <QuickReplies {...quickRepliesProps} className="chat-quick-replies" />
+            <InputRow {...inputRowProps} className="chat-input-row" />
+            <BookingOverlay {...bookingOverlayProps} />
           </div>
         </div>
       )}
@@ -350,10 +410,12 @@ export default function ChatWidget({ persona }) {
               <p className="chat-role">Serai Concierge</p>
             </div>
           </div>
-          <div className="chat-mobile-messages" ref={mobileScrollRef}><MessageList /></div>
-          <QuickReplies className="chat-mobile-quick-replies" />
-          <InputRow className="chat-mobile-input-row" />
-          <BookingOverlay />
+          <div className="chat-mobile-messages" ref={mobileScrollRef}>
+            <MessageList {...messageListProps} />
+          </div>
+          <QuickReplies {...quickRepliesProps} className="chat-mobile-quick-replies" />
+          <InputRow {...inputRowProps} className="chat-mobile-input-row" />
+          <BookingOverlay {...bookingOverlayProps} />
         </div>
       )}
     </>

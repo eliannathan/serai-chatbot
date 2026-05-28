@@ -15,7 +15,13 @@ export default function App() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem('serai_persona')
-    if (saved) setPersona(JSON.parse(saved))
+    if (!saved) return
+    // If the stored value is corrupt, drop it and fall back to the persona picker.
+    try {
+      setPersona(JSON.parse(saved))
+    } catch {
+      sessionStorage.removeItem('serai_persona')
+    }
   }, [])
 
   function handlePersonaSelect(p) {

@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/eliannathan/serai-chatbot#readme",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.98.0",
     "@supabase/supabase-js": "^2.106.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

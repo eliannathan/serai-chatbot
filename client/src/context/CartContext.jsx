@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 
 const CartContext = createContext(null)
 const CART_KEY = 'serai_cart'
@@ -16,30 +16,37 @@ export function CartProvider({ children }) {
     sessionStorage.setItem(CART_KEY, JSON.stringify(cart))
   }, [cart])
 
-  function addToCart(item) {
+  // Returns true if the item was added, false if the cart was already full.
+  // Callers can use the return value to show a "cart full" message.
+  const addToCart = useCallback((item) => {
+    if (cart.length >= MAX_CART_ITEMS) return false
     setCart(prev => {
+      // Re-check inside the updater so a fast double-click can't exceed MAX
       if (prev.length >= MAX_CART_ITEMS) return prev
       return [...prev, { ...item, id: crypto.randomUUID() }]
     })
-  }
+    return true
+  }, [cart.length])
 
-  function removeFromCart(id) {
+  const removeFromCart = useCallback((id) => {
     setCart(prev => prev.filter(i => i.id !== id))
-  }
+  }, [])
 
-  function clearCart() {
+  const clearCart = useCallback(() => {
     setCart([])
     sessionStorage.removeItem(CART_KEY)
-  }
+  }, [])
 
   const value = useMemo(() => ({
     cart,
     addToCart,
     removeFromCart,
     clearCart,
-    cartTotal: cart.reduce((sum, i) => sum + i.total, 0),
-    cartCount: cart.length,
-  }), [cart])
+    cartTotal:    cart.reduce((sum, i) => sum + i.total, 0),
+    cartCount:    cart.length,
+    cartFull:     cart.length >= MAX_CART_ITEMS,
+    maxCartItems: MAX_CART_ITEMS,
+  }), [cart, addToCart, removeFromCart, clearCart])
 
   return (
     <CartContext.Provider value={value}>

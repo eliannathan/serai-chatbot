@@ -30,10 +30,12 @@ export default function ImageGallery({ images, roomName, onClose }) {
     return () => window.removeEventListener('keydown', handleKey)
   }, [prev, next, onClose])
 
-  // Lock body scroll
+  // Lock body scroll — save previous value so cleanup restores it correctly
+  // even when another overlay (e.g. mobile ChatWidget) already set overflow.
   useEffect(() => {
+    const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    return () => { document.body.style.overflow = prev }
   }, [])
 
   return (
