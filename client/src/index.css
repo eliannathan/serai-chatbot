@@ -693,6 +693,26 @@ body {
   /* Chat toggle */
   .chat-toggle { bottom: 1.5rem; right: 1.5rem; }
 
+  /* ── BookPage booking flow (mobile) ──────────────────────────────────────
+     Scoped to .page-content .booking-section so only the full-page BookPage
+     steps are affected — the in-chat BookingFlow lives in .booking-flow and
+     Checkout doesn't use .booking-section, so both are left untouched. */
+
+  /* iOS Safari auto-zooms when a focused input/select/textarea has font-size
+     below 16px. Pin every booking field (date inputs, guest select, special
+     requests textarea) to 16px to prevent the zoom-on-focus. */
+  .page-content .booking-section .input { font-size: 16px; }
+
+  /* Native date inputs render oversized on mobile — trim their padding so they
+     feel appropriately sized. Font stays at 16px (rule above) to keep iOS from
+     zooming, so the slimmer feel comes from the reduced padding. */
+  .page-content .booking-date-row .input { padding: 0.5rem 0.6rem; }
+
+  /* The fixed chat FAB (.chat-toggle, bottom 1.5rem + 52px) sits over the
+     bottom-right of the content column on mobile, covering the Next/Review
+     button. Push the step nav row up so the FAB never overlaps it. */
+  .page-content .booking-section .booking-actions { margin-bottom: 6rem; }
+
   /* Hide desktop chat panel on mobile */
   .chat-panel { display: none; }
 
