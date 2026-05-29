@@ -39,6 +39,22 @@ function clearDraft() {
   }
 }
 
+// Pre-fill guest details from the active demo persona, mirroring Checkout.jsx.
+// The persona stored under `serai_persona` carries `name` and `email` directly.
+// The visitor persona has a null email, so it yields no prefill (blank fields),
+// matching Checkout's behaviour of only pre-filling named guests.
+function getPersonaDefaults() {
+  try {
+    const stored = sessionStorage.getItem('serai_persona')
+    if (!stored) return null
+    const persona = JSON.parse(stored)
+    if (!persona?.name || !persona?.email) return null
+    return { name: persona.name, email: persona.email }
+  } catch {
+    return null
+  }
+}
+
 export default function BookingFlow({ onComplete, onCancel }) {
   const navigate = useNavigate()
   const { cart, addToCart, cartFull, maxCartItems } = useCart()
@@ -84,12 +100,17 @@ export default function BookingFlow({ onComplete, onCancel }) {
     i.guestEmail?.trim() && i.guestEmail.trim().toLowerCase() !== PLACEHOLDER_EMAIL
   )
   // A restored draft takes priority over the cart prefill (it's the user's most
-  // recent in-progress input). Otherwise fall back to the cart-based prefill.
+  // recent in-progress input), then the cart prefill, then the active persona.
+  // Each initializer runs once on mount so user edits are never clobbered.
   const [guestName, setGuestName] = useState(() =>
-    validDraft ? draft.guestName || '' : prefillSource?.guestName?.trim() || ''
+    validDraft
+      ? draft.guestName || ''
+      : prefillSource?.guestName?.trim() || getPersonaDefaults()?.name || ''
   )
   const [guestEmail, setGuestEmail] = useState(() =>
-    validDraft ? draft.guestEmail || '' : prefillSource?.guestEmail?.trim() || ''
+    validDraft
+      ? draft.guestEmail || ''
+      : prefillSource?.guestEmail?.trim() || getPersonaDefaults()?.email || ''
   )
   const [prefilledFromCart] = useState(Boolean(prefillSource) && !validDraft)
   const [guestInfoError, setGuestInfoError] = useState('')
@@ -234,6 +255,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
       {/* ─── Step 1 — Room ──────────────────────────────────────────────── */}
       {step === 1 && (
         <div className="booking-section">
+          <div className="booking-step-content">
           <p className="booking-section-title">Which room calls to you?</p>
           <div className="booking-room-list">
             {ROOMS.map(room => (
@@ -260,6 +282,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
               </div>
             ))}
           </div>
+          </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={handleCancel}>Cancel</button>
             <button className="btn-primary" onClick={() => advanceTo(2)} disabled={!selectedRoom}>
@@ -274,6 +297,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
       {/* widget is too narrow to render them side-by-side comfortably.     */}
       {step === 2 && (
         <div className="booking-section">
+          <div className="booking-step-content">
           <p className="booking-section-title">When are you planning to visit?</p>
           <div className="booking-field">
             <label>Check-in</label>
@@ -322,6 +346,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
               {nights} night{nights > 1 ? 's' : ''} × ${selectedRoom?.price} = <strong>${roomSubtotal}</strong>
             </div>
           )}
+          </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(1)}>← Back</button>
             <button
@@ -338,6 +363,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
       {/* ─── Step 3 — Add-ons ──────────────────────────────────────────── */}
       {step === 3 && (
         <div className="booking-section">
+          <div className="booking-step-content">
           <p className="booking-section-title">Enhance your stay</p>
           <div className="addon-list">
             {ADD_ONS.map(a => (
@@ -362,6 +388,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
               Add-ons: +${addOnTotal} · Room: ${roomSubtotal} · <strong>Total: ${total}</strong>
             </div>
           )}
+          </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(2)}>← Back</button>
             <button className="btn-primary" onClick={() => advanceTo(4)}>Next →</button>
@@ -372,6 +399,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
       {/* ─── Step 4 — Guest Info ───────────────────────────────────────── */}
       {step === 4 && (
         <div className="booking-section">
+          <div className="booking-step-content">
           <p className="booking-section-title">Your details</p>
           {prefilledFromCart && (
             <p className="booking-prefill-note">Using details from your previous booking</p>
@@ -399,6 +427,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
             />
           </div>
           {guestInfoError && <p className="error-msg">{guestInfoError}</p>}
+          </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(3)}>← Back</button>
             <button className="btn-primary" onClick={handleGuestInfoNext}>
@@ -411,6 +440,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
       {/* ─── Step 5 — Review ───────────────────────────────────────────── */}
       {step === 5 && (
         <div className="booking-section">
+          <div className="booking-step-content">
           <p className="booking-section-title">Review your request</p>
           <div className="booking-review">
             <div><span>Room</span><strong>{selectedRoom?.name}</strong></div>
@@ -436,6 +466,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
               Cart is full ({maxCartItems} items max). Please check out before adding more.
             </p>
           )}
+          </div>
           <div className="booking-actions">
             <button className="booking-cancel" onClick={() => setStep(4)}>← Back</button>
             <button

@@ -1068,10 +1068,12 @@ body {
   flex-direction: column;
   gap: 1rem;
   height: 100%;
-  overflow-y: auto;
-  /* Clip any horizontal bleed so inputs (date/email have intrinsic min widths)
-     can't push past the padded edge on narrow mobile widgets. */
-  overflow-x: hidden;
+  /* Fixed-height flex column: the progress row pins to the top, the per-step
+     content (.booking-step-content) owns the vertical scroll, and the Back/Next
+     row (.booking-flow .booking-actions) pins to the bottom. overflow:hidden
+     clips any bleed — inputs have intrinsic min widths and could otherwise push
+     past the padded edge on narrow mobile widgets. */
+  overflow: hidden;
 }
 
 .booking-progress {
@@ -1129,6 +1131,8 @@ body {
   justify-content: space-between;
   gap: 0.25rem;
   padding-bottom: 0.75rem;
+  /* Pinned to the top — never scrolls or shrinks. */
+  flex-shrink: 0;
 }
 
 .booking-flow .booking-step-dot { gap: 0.2rem; flex: 0 0 auto; }
@@ -1145,6 +1149,40 @@ body {
 }
 
 .booking-section { display: flex; flex-direction: column; gap: 0.85rem; }
+
+/* Inside the chat overlay the section fills the remaining panel height so its
+   content wrapper can scroll while the actions row pins to the bottom. The
+   inter-child gap moves to .booking-step-content; the actions row provides its
+   own top divider/spacing. (BookPage uses the unscoped .booking-section above.) */
+.booking-flow .booking-section {
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+/* Scrollable per-step content. flex:1 + min-height:0 lets it shrink within the
+   fixed-height section so overflow scrolls here rather than growing the panel. */
+.booking-flow .booking-step-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Back / Next (or Add to Pending) row — pinned to the bottom of the panel,
+   never scrolls. The white background + top border keep it visually separated
+   from content scrolling beneath it. Scoped to .booking-section so the centered
+   buttons on the step-6 success screen (.booking-confirmed) keep their look. */
+.booking-flow .booking-section .booking-actions {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  background: white;
+}
 
 .booking-section-title {
   font-family: var(--font-display);

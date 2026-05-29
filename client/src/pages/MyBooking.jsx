@@ -8,12 +8,22 @@ function isValidEmail(email) {
 
 export default function MyBooking() {
   const [email, setEmail] = useState('')
+  const [bookingRef, setBookingRef] = useState('')
   const [bookings, setBookings] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleLookup() {
-    if (!isValidEmail(email)) {
+    const hasEmail = email.trim()
+    const hasRef = bookingRef.trim()
+
+    // OR lookup: at least one identifier is required.
+    if (!hasEmail && !hasRef) {
+      setError('Please enter your email or booking reference.')
+      return
+    }
+    // Only validate the email format when it's the field we'll actually query by.
+    if (hasEmail && !hasRef && !isValidEmail(email)) {
       setError('Please enter a valid email address.')
       return
     }
@@ -21,14 +31,22 @@ export default function MyBooking() {
     setError('')
     setBookings([])
 
-    const { data, error: err } = await supabase
+    let query = supabase
       .from('bookings')
       .select('booking_ref, guest_name, check_in, check_out, total_price, status, rooms(name, type)')
-      .eq('guest_email', email.trim().toLowerCase())
-      .order('check_in', { ascending: true })
+
+    // Booking reference is the most specific identifier — prefer it when provided,
+    // otherwise fall back to looking up by email.
+    if (hasRef) {
+      query = query.eq('booking_ref', bookingRef.trim().toUpperCase())
+    } else {
+      query = query.eq('guest_email', email.trim().toLowerCase())
+    }
+
+    const { data, error: err } = await query.order('check_in', { ascending: true })
 
     if (err || !data || data.length === 0) {
-      setError('No bookings found for this email address.')
+      setError('No booking found for that email or reference.')
     } else {
       setBookings(data)
     }
@@ -52,10 +70,18 @@ export default function MyBooking() {
             onKeyDown={e => e.key === 'Enter' && handleLookup()}
             className="input"
           />
+          <input
+            placeholder="Booking Reference (e.g. SR-2847)"
+            type="text"
+            value={bookingRef}
+            onChange={e => setBookingRef(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLookup()}
+            className="input"
+          />
           <button
             onClick={handleLookup}
             className="btn-primary"
-            disabled={loading || !email.trim()}
+            disabled={loading || (!email.trim() && !bookingRef.trim())}
           >
             {loading ? 'Looking up...' : 'Find My Bookings'}
           </button>
