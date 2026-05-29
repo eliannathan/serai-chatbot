@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { ROOMS } from '../data/rooms'
+import { ROOMS, slugifyRoomName } from '../data/rooms'
 import { ADD_ONS } from '../data/addons'
 
 function isValidEmail(email) {
@@ -174,11 +174,11 @@ export default function BookingFlow({ onComplete, onCancel }) {
                   <span className="booking-room-option-price">${room.price}/night</span>
                 </button>
                 {/* Lets the user see full room photos/details without abandoning
-                    the flow via a hard cancel. Routes to the rooms page. */}
+                    the flow via a hard cancel. Routes to this room's detail page. */}
                 <button
                   type="button"
                   className="booking-room-details-link"
-                  onClick={() => navigate('/rooms')}
+                  onClick={() => navigate(`/rooms/${slugifyRoomName(room.name)}`)}
                 >
                   View details →
                 </button>
