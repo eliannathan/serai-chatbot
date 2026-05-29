@@ -1155,6 +1155,20 @@ body {
 
 .booking-room-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
+.booking-room-item { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.booking-room-details-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0.1rem 0.25rem;
+  font-size: 0.72rem;
+  color: var(--sage);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.booking-room-details-link:hover { color: var(--earth); }
+
 .booking-room-option {
   display: flex;
   align-items: center;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import RoomCarousel from '../components/RoomCarousel'
 import { roomImages } from '../data/roomImages'
+import { slugifyRoomName } from '../data/rooms'
 import NavBar from '../components/NavBar'
 
 export default function Rooms() {
@@ -61,9 +62,9 @@ export default function Rooms() {
                     <button
                       className="btn-primary"
                       style={{ fontSize: '0.75rem' }}
-                      onClick={() => navigate(`/book?room=${encodeURIComponent(room.name)}`)}
+                      onClick={() => navigate(`/rooms/${slugifyRoomName(room.name)}`)}
                     >
-                      Book Now
+                      Details
                     </button>
                   </div>
                 </div>

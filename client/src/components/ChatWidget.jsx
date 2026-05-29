@@ -311,11 +311,13 @@ export default function ChatWidget({ persona }) {
     setTimeout(() => sendMessageWithText(message), 0)
   }
 
-  // On mobile the overlay is too cramped, so route to the full /book page instead.
+  // On mobile the overlay is too cramped, so close the chat and route to the
+  // full /rooms page where the user can browse and book with more space.
   // Desktop keeps the in-widget BookingFlow overlay.
   const handleStartBooking = useCallback(() => {
     if (window.innerWidth < 768) {
-      navigate('/book')
+      setOpen(false)
+      navigate('/rooms')
     } else {
       setShowBookingFlow(true)
     }

@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useLocation } from 'react-router-dom'
 import { useCart } from "../context/CartContext"
 import { ROOMS } from '../data/rooms'
 import { ADD_ONS } from '../data/addons'
 import NavBar from '../components/NavBar'
 
+// Resolve an initial room from either the ?room=<name> query (legacy links) or
+// router state's preselectedRoomId (set by RoomDetail's "Book Now").
+function resolvePreselectedRoom(name, id) {
+  return ROOMS.find(r => r.id === id) || ROOMS.find(r => r.name === name) || null
+}
+
 export default function BookPage() {
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { addToCart } = useCart()
 
   const preselected = searchParams.get('room')
+  const preselectedRoomId = location.state?.preselectedRoomId
 
   const [added, setAdded] = useState(false)
 
   const [step, setStep] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState(
-    ROOMS.find(r => r.name === preselected) || null
+    () => resolvePreselectedRoom(preselected, preselectedRoomId)
   )
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
@@ -24,11 +32,9 @@ export default function BookPage() {
   const [specialRequests, setSpecialRequests] = useState('')
 
   useEffect(() => {
-    if (preselected) {
-      const room = ROOMS.find(r => r.name === preselected)
-      if (room) { setSelectedRoom(room); setStep(2) }
-    }
-  }, [preselected])
+    const room = resolvePreselectedRoom(preselected, preselectedRoomId)
+    if (room) { setSelectedRoom(room); setStep(2) }
+  }, [preselected, preselectedRoomId])
 
   const nights = checkIn && checkOut
     ? Math.max(0, (new Date(checkOut + 'T12:00:00') - new Date(checkIn + 'T12:00:00')) / 86400000)

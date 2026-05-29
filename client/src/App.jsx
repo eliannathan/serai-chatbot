@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Landing from './pages/Landing'
 import Rooms from './pages/Rooms'
+import RoomDetail from './pages/RoomDetail'
 import Amenities from './pages/Amenities'
 import MyBooking from './pages/MyBooking'
 import Checkout from './pages/Checkout'
@@ -36,6 +37,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/rooms" element={<Rooms />} />
+          <Route path="/rooms/:slug" element={<RoomDetail />} />
           <Route path="/amenities" element={<Amenities />} />
           <Route path="/my-booking" element={<MyBooking />} />
           <Route path="/book" element={<BookPage />} />

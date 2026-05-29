@@ -162,17 +162,27 @@ export default function BookingFlow({ onComplete, onCancel }) {
           <p className="booking-section-title">Which room calls to you?</p>
           <div className="booking-room-list">
             {ROOMS.map(room => (
-              <button
-                key={room.name}
-                className={`booking-room-option ${selectedRoom?.name === room.name ? 'selected' : ''}`}
-                onClick={() => setSelectedRoom(room)}
-              >
-                <div className="booking-room-option-info">
-                  <p className="booking-room-option-name">{room.name}</p>
-                  <p className="booking-room-option-desc">{room.desc}</p>
-                </div>
-                <span className="booking-room-option-price">${room.price}/night</span>
-              </button>
+              <div key={room.name} className="booking-room-item">
+                <button
+                  className={`booking-room-option ${selectedRoom?.name === room.name ? 'selected' : ''}`}
+                  onClick={() => setSelectedRoom(room)}
+                >
+                  <div className="booking-room-option-info">
+                    <p className="booking-room-option-name">{room.name}</p>
+                    <p className="booking-room-option-desc">{room.desc}</p>
+                  </div>
+                  <span className="booking-room-option-price">${room.price}/night</span>
+                </button>
+                {/* Lets the user see full room photos/details without abandoning
+                    the flow via a hard cancel. Routes to the rooms page. */}
+                <button
+                  type="button"
+                  className="booking-room-details-link"
+                  onClick={() => navigate('/rooms')}
+                >
+                  View details →
+                </button>
+              </div>
             ))}
           </div>
           <div className="booking-actions">
