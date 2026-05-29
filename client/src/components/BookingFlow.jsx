@@ -10,11 +10,15 @@ function isValidEmail(email) {
 
 // 6-step progress: input on steps 1–5, success screen on step 6.
 // Labels kept short (≤7 chars) so the row fits in the ~340px chat widget.
-const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Info', 'Review', 'Confirm']
+const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Info', 'Review', 'Done']
 
-export default function BookingFlow({ persona, onComplete, onCancel }) {
+// Placeholder values we never want to treat as real guest details when pre-filling.
+const PLACEHOLDER_NAME = 'guest'
+const PLACEHOLDER_EMAIL = 'guest@gmail.com'
+
+export default function BookingFlow({ onComplete, onCancel }) {
   const navigate = useNavigate()
-  const { addToCart, cartFull, maxCartItems } = useCart()
+  const { cart, addToCart, cartFull, maxCartItems } = useCart()
 
   const [step, setStep] = useState(1)
   // Scroll container ref — reset to top when advancing steps so users always
@@ -33,14 +37,16 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
   const [selectedAddOns, setSelectedAddOns] = useState([])
   const [specialRequests, setSpecialRequests] = useState('')
 
-  // Pre-fill name/email from persona when it's a named demo guest.
-  // The visitor persona has no booking, so we leave the fields blank.
-  const [guestName, setGuestName] = useState(
-    persona?.name && persona.id !== 'visitor' ? persona.name : ''
+  // Pre-fill name/email from an earlier cart item that carries real guest details.
+  // Empty values and the "guest"/"guest@gmail.com" placeholders are ignored, so
+  // a first-time guest always starts with blank fields.
+  const prefillSource = cart.find(i =>
+    i.guestName?.trim() && i.guestName.trim().toLowerCase() !== PLACEHOLDER_NAME &&
+    i.guestEmail?.trim() && i.guestEmail.trim().toLowerCase() !== PLACEHOLDER_EMAIL
   )
-  const [guestEmail, setGuestEmail] = useState(
-    persona?.email && persona.id !== 'visitor' ? persona.email : ''
-  )
+  const [guestName, setGuestName] = useState(prefillSource?.guestName?.trim() || '')
+  const [guestEmail, setGuestEmail] = useState(prefillSource?.guestEmail?.trim() || '')
+  const [prefilledFromCart] = useState(Boolean(prefillSource))
   const [guestInfoError, setGuestInfoError] = useState('')
 
   // Noon anchor avoids DST edge-case miscounts (consistent with BookPage)
@@ -282,6 +288,9 @@ export default function BookingFlow({ persona, onComplete, onCancel }) {
       {step === 4 && (
         <div className="booking-section">
           <p className="booking-section-title">Your details</p>
+          {prefilledFromCart && (
+            <p className="booking-prefill-note">Using details from your previous booking</p>
+          )}
           <div className="booking-field">
             <label>Full Name</label>
             <input

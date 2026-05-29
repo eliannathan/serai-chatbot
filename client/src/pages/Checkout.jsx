@@ -109,7 +109,7 @@ export default function Checkout() {
     <div className="page">
       <NavBar />
 
-      <div className="page-content" style={{ maxWidth: 680 }}>
+      <div className="page-content" style={{ maxWidth: 680, paddingBottom: 80 }}>
         {done ? (
           <div className="checkout-success">
             <div className="checkout-success-icon">✓</div>

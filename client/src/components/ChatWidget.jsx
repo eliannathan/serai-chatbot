@@ -40,7 +40,7 @@ function bubbleHTML(content) {
 // between renders, so it never unmounts/remounts their DOM nodes. This preserves
 // textarea focus and avoids message-list flicker on every state change.
 
-function MessageList({ messages, loading, navigate, showBookingFlow, setShowBookingFlow, bottomRef }) {
+function MessageList({ messages, loading, navigate, showBookingFlow, onStartBooking, bottomRef }) {
   return (
     <>
       {messages.map((m, i) => (
@@ -63,7 +63,7 @@ function MessageList({ messages, loading, navigate, showBookingFlow, setShowBook
             </div>
           )}
           {m.showBookingBtn && !showBookingFlow && (
-            <button className="chat-action-btn primary" onClick={() => setShowBookingFlow(true)}>
+            <button className="chat-action-btn primary" onClick={onStartBooking}>
               🌿 Start Booking
             </button>
           )}
@@ -274,7 +274,7 @@ export default function ChatWidget({ persona }) {
       const reply = data.content?.[0]?.text || "I'm sorry, I couldn't process that. Please try again."
       const actions = data.actions || []
 
-      if (actions.includes('START_BOOKING')) setShowBookingFlow(true)
+      if (actions.includes('START_BOOKING')) handleStartBooking()
 
       const actionButtons = actions
         .filter(a => a !== 'START_BOOKING')
@@ -310,6 +310,16 @@ export default function ChatWidget({ persona }) {
     setInput(message)
     setTimeout(() => sendMessageWithText(message), 0)
   }
+
+  // On mobile the overlay is too cramped, so route to the full /book page instead.
+  // Desktop keeps the in-widget BookingFlow overlay.
+  const handleStartBooking = useCallback(() => {
+    if (window.innerWidth < 768) {
+      navigate('/book')
+    } else {
+      setShowBookingFlow(true)
+    }
+  }, [navigate])
 
   // BookingFlow callbacks — kept as plain functions since BookingOverlay is
   // now a stable component type and will only re-render (not remount) on prop changes.
@@ -355,7 +365,7 @@ export default function ChatWidget({ persona }) {
   ]
 
   // Shared props bundles passed to the module-level subcomponents
-  const messageListProps = { messages, loading, navigate, showBookingFlow, setShowBookingFlow, bottomRef }
+  const messageListProps = { messages, loading, navigate, showBookingFlow, onStartBooking: handleStartBooking, bottomRef }
   const quickRepliesProps = { messages, quickReplies, handleQuickReply, loading }
   const inputRowProps = { input, setInput, handleKey, sendMessage, loading, isMobile }
   const bookingOverlayProps = {

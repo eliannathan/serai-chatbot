@@ -48,11 +48,15 @@ The AI can include `[ACTION:TAG_NAME]` tokens in its response text. `chat.js` st
 Available actions: `GO_ROOMS`, `GO_BOOKING`, `GO_AMENITIES`, `GO_CHECKOUT`, `START_BOOKING`, `SHOW_BOOKING`, `CONTACT_TEAM`.
 
 ### Two Booking Flows
-1. **Page flow** (`/book` → `/checkout`): `BookPage` is a 4-step form (room, dates, add-ons, review) that calls `addToCart()`. `Checkout` page then batch-inserts all cart items to Supabase `bookings` table.
-2. **Chat overlay flow** (`BookingFlow` component): A 3-step form that opens inside the chat widget (triggered by `START_BOOKING` action). Submits via `POST /api/chat` with a `bookingRequest` payload — the serverless function handles the Supabase insert.
+Both flows funnel into the cart → `Checkout` is the **only** place that inserts into the Supabase `bookings` table.
+1. **Page flow** (`/book` → `/checkout`): `BookPage` is a 4-step form (room, dates, add-ons, review) that calls `addToCart()`.
+2. **Chat overlay flow** (`BookingFlow` component): A 6-step form (room, dates, add-ons, guest info, review, confirm) that opens inside the chat widget (triggered by `START_BOOKING` action). It also calls `addToCart()` and then routes to `/checkout` — it does **not** insert directly. Guest name/email collected in step 4 are carried on the cart item so `Checkout` can pre-fill them.
 
 ### Cart
 `CartContext` (`client/src/context/CartContext.jsx`) stores items in `sessionStorage` (`serai_cart`). Max 5 items. Cart contents are serialized and sent with every chat message so the AI can reference pending items.
+
+### Shared Data Files
+Room and add-on definitions live in `client/src/data/rooms.js` (`ROOMS`) and `client/src/data/addons.js` (`ADD_ONS`) — the single source of truth imported by `BookPage`, `BookingFlow`, and others. Keep these in sync with the room/add-on details described in the `BASE_PROMPT` so the AI and the forms agree on prices and capacities.
 
 ### Supabase Access Pattern
 - **Frontend (anon key)**: `MyBooking` page reads bookings; `Checkout` inserts bookings; `ChatWidget` inserts to `leads` on first message.
@@ -83,10 +87,11 @@ SUPABASE_SERVICE_KEY=...
 
 ## Customizing for a New Client
 
-Three places to change:
-1. **`client/api/chat.js`** — `BASE_PROMPT` constant (resort info, policies, room details, action rules)
-2. **`client/src/App.css`** — brand color `#4a7c59` (one find-and-replace)
-3. **`client/src/App.jsx`** — welcome message and persona display text
+Places to change:
+1. **`client/api/chat.js`** — `BASE_PROMPT` constant (resort info, policies, room details, action rules). Also update the local `server.js` prompt to match.
+2. **`client/src/data/rooms.js` & `addons.js`** — room/add-on names, prices, capacities used by the booking forms (keep in sync with `BASE_PROMPT`)
+3. **`client/src/App.css`** — brand color `#4a7c59` (one find-and-replace)
+4. **`client/src/App.jsx`** — welcome message and persona display text
 
 ## Deployment
 
