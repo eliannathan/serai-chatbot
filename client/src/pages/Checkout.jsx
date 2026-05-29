@@ -32,18 +32,40 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+// Map persona IDs to the guest details used in the demo.
+// Visitor persona ("visitor") is intentionally absent — blank fields by default.
+const PERSONA_DEFAULTS = {
+  james:   { name: 'James Wilson',    email: 'james@demo.com'   },
+  sarah:   { name: 'Sarah Chen',      email: 'sarah@demo.com'   },
+  michael: { name: 'Michael Torres',  email: 'michael@demo.com' },
+}
+
+// Read the active persona from sessionStorage and return its default name/email,
+// or null if no persona is set or it has no entry in PERSONA_DEFAULTS.
+function getPersonaDefaults() {
+  try {
+    const stored = sessionStorage.getItem('serai_persona')
+    if (!stored) return null
+    const persona = JSON.parse(stored)
+    return PERSONA_DEFAULTS[persona?.id] ?? null
+  } catch {
+    return null
+  }
+}
+
 export default function Checkout() {
   const { cart, clearCart, cartCount } = useCart()
-  // Pre-fill from any cart item that carries guest info (e.g. items added via the
-  // chat-widget BookingFlow). Initializer runs once on mount, so user edits aren't
-  // clobbered if the cart updates later.
+  // Priority: cart item guest info > active persona > blank.
+  // Initializer runs once on mount so user edits aren't clobbered by cart changes.
   const [name, setName] = useState(() => {
-    const item = cart.find(i => i.guestName)
-    return item?.guestName || ''
+    const cartItem = cart.find(i => i.guestName?.trim())
+    if (cartItem) return cartItem.guestName
+    return getPersonaDefaults()?.name || ''
   })
   const [email, setEmail] = useState(() => {
-    const item = cart.find(i => i.guestEmail)
-    return item?.guestEmail || ''
+    const cartItem = cart.find(i => i.guestEmail?.trim())
+    if (cartItem) return cartItem.guestEmail
+    return getPersonaDefaults()?.email || ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)

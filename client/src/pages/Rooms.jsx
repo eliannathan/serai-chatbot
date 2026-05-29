@@ -62,7 +62,10 @@ export default function Rooms() {
                     <button
                       className="btn-primary"
                       style={{ fontSize: '0.75rem' }}
-                      onClick={() => navigate(`/rooms/${slugifyRoomName(room.name)}`)}
+                      onClick={() => {
+                        const slug = slugifyRoomName(room.name)
+                        navigate(`/rooms/${slug}`)
+                      }}
                     >
                       Details
                     </button>
