@@ -143,6 +143,7 @@ export default function ChatWidget({ persona }) {
 
   const bottomRef = useRef(null)
   const panelRef = useRef(null)
+  const toggleRef = useRef(null)
   const mobileScrollRef = useRef(null)
   const resizing = useRef(null)
 
@@ -166,6 +167,24 @@ export default function ChatWidget({ persona }) {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Desktop-only: click outside the chat panel closes it. Safe to close even
+  // mid-booking-flow — BookingFlow persists its draft to sessionStorage and
+  // restores it on reopen. On mobile the chat is full-screen, so there's no
+  // "outside" to click. The toggle button is excluded so its own onClick can
+  // close the panel without this listener closing-then-reopening it.
+  useEffect(() => {
+    if (!open || isMobile) return
+
+    function handleClickOutside(e) {
+      const insidePanel = panelRef.current?.contains(e.target)
+      const onToggle = toggleRef.current?.contains(e.target)
+      if (!insidePanel && !onToggle) setOpen(false)
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open, isMobile])
 
   // Lock body scroll on mobile.
   // Save and restore previous values so we don't stomp on another overlay
@@ -379,7 +398,7 @@ export default function ChatWidget({ persona }) {
 
   return (
     <>
-      <button onClick={() => setOpen(o => !o)} className="chat-toggle" aria-label="Open chat">
+      <button ref={toggleRef} onClick={() => setOpen(o => !o)} className="chat-toggle" aria-label="Open chat">
         {open ? '✕' : '🌿'}
       </button>
 

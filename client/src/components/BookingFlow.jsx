@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { ROOMS, slugifyRoomName } from '../data/rooms'
@@ -16,11 +16,41 @@ const STEP_LABELS = ['Room', 'Dates', 'Add-ons', 'Info', 'Review', 'Done']
 const PLACEHOLDER_NAME = 'guest'
 const PLACEHOLDER_EMAIL = 'guest@gmail.com'
 
+// sessionStorage key for an in-progress booking draft, so accidentally closing
+// and reopening the overlay restores the user's progress.
+const DRAFT_KEY = 'serai_booking_draft'
+
+// All sessionStorage access is wrapped — private browsing / disabled storage
+// throws on access, and JSON.parse can throw on corrupt data.
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function clearDraft() {
+  try {
+    sessionStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export default function BookingFlow({ onComplete, onCancel }) {
   const navigate = useNavigate()
   const { cart, addToCart, cartFull, maxCartItems } = useCart()
 
-  const [step, setStep] = useState(1)
+  // Read any saved draft once on mount. Only restorable if it carries a room;
+  // step is clamped to 1–5 so we never resume directly onto the success screen.
+  const [draft] = useState(() => loadDraft())
+  const validDraft = Boolean(draft?.selectedRoom)
+
+  const [step, setStep] = useState(() =>
+    validDraft ? Math.min(Math.max(draft.currentStep || 1, 1), 5) : 1
+  )
   // Scroll container ref — reset to top when advancing steps so users always
   // land at the top of the new step's content (not halfway down a long form).
   const containerRef = useRef(null)
@@ -30,12 +60,21 @@ export default function BookingFlow({ onComplete, onCancel }) {
     if (containerRef.current) containerRef.current.scrollTop = 0
   }
 
-  const [selectedRoom, setSelectedRoom] = useState(null)
-  const [checkIn, setCheckIn] = useState('')
-  const [checkOut, setCheckOut] = useState('')
-  const [numGuests, setNumGuests] = useState(1)
-  const [selectedAddOns, setSelectedAddOns] = useState([])
-  const [specialRequests, setSpecialRequests] = useState('')
+  const [selectedRoom, setSelectedRoom] = useState(() => {
+    if (!validDraft) return null
+    // Re-resolve against the canonical ROOMS list so price/capacity stay current;
+    // fall back to the stored object if the room is no longer in the list.
+    return ROOMS.find(r => r.id === draft.selectedRoom.id) || draft.selectedRoom
+  })
+  const [checkIn, setCheckIn] = useState(() => (validDraft ? draft.checkIn || '' : ''))
+  const [checkOut, setCheckOut] = useState(() => (validDraft ? draft.checkOut || '' : ''))
+  const [numGuests, setNumGuests] = useState(() => (validDraft ? draft.numGuests || 1 : 1))
+  const [selectedAddOns, setSelectedAddOns] = useState(() =>
+    validDraft && Array.isArray(draft.selectedAddOns) ? draft.selectedAddOns : []
+  )
+  const [specialRequests, setSpecialRequests] = useState(() =>
+    validDraft ? draft.specialRequests || '' : ''
+  )
 
   // Pre-fill name/email from an earlier cart item that carries real guest details.
   // Empty values and the "guest"/"guest@gmail.com" placeholders are ignored, so
@@ -44,10 +83,38 @@ export default function BookingFlow({ onComplete, onCancel }) {
     i.guestName?.trim() && i.guestName.trim().toLowerCase() !== PLACEHOLDER_NAME &&
     i.guestEmail?.trim() && i.guestEmail.trim().toLowerCase() !== PLACEHOLDER_EMAIL
   )
-  const [guestName, setGuestName] = useState(prefillSource?.guestName?.trim() || '')
-  const [guestEmail, setGuestEmail] = useState(prefillSource?.guestEmail?.trim() || '')
-  const [prefilledFromCart] = useState(Boolean(prefillSource))
+  // A restored draft takes priority over the cart prefill (it's the user's most
+  // recent in-progress input). Otherwise fall back to the cart-based prefill.
+  const [guestName, setGuestName] = useState(() =>
+    validDraft ? draft.guestName || '' : prefillSource?.guestName?.trim() || ''
+  )
+  const [guestEmail, setGuestEmail] = useState(() =>
+    validDraft ? draft.guestEmail || '' : prefillSource?.guestEmail?.trim() || ''
+  )
+  const [prefilledFromCart] = useState(Boolean(prefillSource) && !validDraft)
   const [guestInfoError, setGuestInfoError] = useState('')
+
+  // Persist the in-progress draft on every step/field change. The success screen
+  // (step 6) is skipped — by then the booking is in the cart and the draft has
+  // been cleared, so there's nothing to save.
+  useEffect(() => {
+    if (step === 6) return
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        currentStep: step,
+        selectedRoom,
+        checkIn,
+        checkOut,
+        numGuests,
+        specialRequests,
+        selectedAddOns,
+        guestName,
+        guestEmail,
+      }))
+    } catch {
+      // ignore storage errors (private browsing, quota exceeded, etc.)
+    }
+  }, [step, selectedRoom, checkIn, checkOut, numGuests, specialRequests, selectedAddOns, guestName, guestEmail])
 
   // Noon anchor avoids DST edge-case miscounts (consistent with BookPage)
   const nights = checkIn && checkOut
@@ -102,14 +169,22 @@ export default function BookingFlow({ onComplete, onCancel }) {
     })
 
     if (added) {
+      // Booking is now in the cart — discard the draft so the next open starts fresh.
+      clearDraft()
       advanceTo(6)
       onComplete?.(selectedRoom?.name)
     }
   }
 
+  // Cancelling/closing the flow discards the draft so reopening starts fresh.
+  function handleCancel() {
+    clearDraft()
+    onCancel?.()
+  }
+
   function handleGoToCheckout() {
     // Close the overlay first so it doesn't linger over /checkout after navigation
-    onCancel?.()
+    handleCancel()
     navigate('/checkout')
   }
 
@@ -134,7 +209,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
             <strong>${total}</strong>
           </div>
           <div className="booking-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
-            <button className="booking-cancel" onClick={onCancel}>Close</button>
+            <button className="booking-cancel" onClick={handleCancel}>Close</button>
             <button className="btn-primary" onClick={handleGoToCheckout}>
               Go to Checkout →
             </button>
@@ -186,7 +261,7 @@ export default function BookingFlow({ onComplete, onCancel }) {
             ))}
           </div>
           <div className="booking-actions">
-            <button className="booking-cancel" onClick={onCancel}>Cancel</button>
+            <button className="booking-cancel" onClick={handleCancel}>Cancel</button>
             <button className="btn-primary" onClick={() => advanceTo(2)} disabled={!selectedRoom}>
               Next →
             </button>
