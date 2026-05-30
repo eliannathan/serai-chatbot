@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { supabase } from '../supabase'
 import NavBar from '../components/NavBar'
+import { getPersonaDefaults } from '../utils/personaUtils'
 
 // 32-char alphabet (no ambiguous chars: 0/O, 1/I/L).
 // 32^6 ≈ 1 billion combinations — collision-resistant without a DB round-trip loop.
@@ -30,27 +31,6 @@ async function generateUniqueRefs(count) {
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-// Map persona IDs to the guest details used in the demo.
-// Visitor persona ("visitor") is intentionally absent — blank fields by default.
-const PERSONA_DEFAULTS = {
-  james:   { name: 'James Wilson',    email: 'james@demo.com'   },
-  sarah:   { name: 'Sarah Chen',      email: 'sarah@demo.com'   },
-  michael: { name: 'Michael Torres',  email: 'michael@demo.com' },
-}
-
-// Read the active persona from sessionStorage and return its default name/email,
-// or null if no persona is set or it has no entry in PERSONA_DEFAULTS.
-function getPersonaDefaults() {
-  try {
-    const stored = sessionStorage.getItem('serai_persona')
-    if (!stored) return null
-    const persona = JSON.parse(stored)
-    return PERSONA_DEFAULTS[persona?.id] ?? null
-  } catch {
-    return null
-  }
 }
 
 export default function Checkout() {
@@ -85,7 +65,7 @@ export default function Checkout() {
 
     try {
       // Batch fetch all room IDs in one query
-      const roomNames = [...new Set(cart.map(item => item.room.name))]
+      const roomNames = [...new Set(cart.map(item => item.room?.name ?? "Unknown Room"))]
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
         .select('id, name')

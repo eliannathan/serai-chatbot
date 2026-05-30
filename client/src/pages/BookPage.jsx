@@ -20,6 +20,7 @@ export default function BookPage() {
   const preselectedRoomId = location.state?.preselectedRoomId
 
   const [added, setAdded] = useState(false)
+  const [error, setError] = useState('')
 
   const [step, setStep] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState(
@@ -54,12 +55,17 @@ export default function BookPage() {
   }
 
   function handleAddToPending() {
-    addToCart({
+    const ok = addToCart({
       room: selectedRoom,
       checkIn, checkOut, numGuests, nights,
       addOns: selectedAddOns.map(id => ADD_ONS.find(a => a.id === id)),
       specialRequests, total,
     })
+    if (!ok) {
+      setError('Your cart is full (max 5 items).')
+      return
+    }
+    setError('')
     setAdded(true)
   }
 
@@ -219,6 +225,7 @@ export default function BookPage() {
             <p className="booking-note" style={{ marginTop: '1rem' }}>
               This adds your room to pending. Complete payment at checkout to confirm.
             </p>
+            {error && <p className="error-msg">{error}</p>}
             <div className="booking-actions">
               <button className="booking-cancel" onClick={() => setStep(3)}>← Back</button>
               <button className="btn-primary" onClick={handleAddToPending}>

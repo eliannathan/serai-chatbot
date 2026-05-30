@@ -59,7 +59,7 @@ export default function MyBooking() {
 
       <div className="page-content narrow">
         <h1 className="page-title">My Booking</h1>
-        <p className="page-sub">Enter your email to view all your reservations.</p>
+        <p className="page-sub">Enter your email or booking reference (e.g. SR-2847) to find your reservation.</p>
 
         <div className="booking-form">
           <input

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { ROOMS, slugifyRoomName } from '../data/rooms'
 import { ADD_ONS } from '../data/addons'
+import { getPersonaDefaults } from '../utils/personaUtils'
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -36,22 +37,6 @@ function clearDraft() {
     sessionStorage.removeItem(DRAFT_KEY)
   } catch {
     // ignore storage errors
-  }
-}
-
-// Pre-fill guest details from the active demo persona, mirroring Checkout.jsx.
-// The persona stored under `serai_persona` carries `name` and `email` directly.
-// The visitor persona has a null email, so it yields no prefill (blank fields),
-// matching Checkout's behaviour of only pre-filling named guests.
-function getPersonaDefaults() {
-  try {
-    const stored = sessionStorage.getItem('serai_persona')
-    if (!stored) return null
-    const persona = JSON.parse(stored)
-    if (!persona?.name || !persona?.email) return null
-    return { name: persona.name, email: persona.email }
-  } catch {
-    return null
   }
 }
 
