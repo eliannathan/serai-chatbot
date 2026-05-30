@@ -716,10 +716,13 @@ body {
 
   /* Stack check-in / check-out vertically on mobile — the side-by-side grid
      layout (set on .booking-date-row at desktop scope) is too cramped at
-     narrow widths. Each field expands to full width inside the flex column. */
+     narrow widths. Each field expands to full width inside the flex column.
+     Horizontal padding gives the stacked fields breathing room on both sides
+     so they don't stretch edge-to-edge of the form. */
   .page-content .booking-section .booking-date-row {
     display: flex;
     flex-direction: column;
+    padding: 0 0.75rem;
   }
 
   /* The fixed chat FAB (.chat-toggle, bottom 1.5rem + 52px) sits over the
