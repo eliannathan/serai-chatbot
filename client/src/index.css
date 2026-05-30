@@ -693,6 +693,12 @@ body {
   /* Chat toggle */
   .chat-toggle { bottom: 1.5rem; right: 1.5rem; }
 
+  /* iOS Safari auto-zooms when a focused input/select/textarea has font-size
+     below 16px. Apply site-wide inside the mobile media query so every form
+     control (Checkout, MyBooking, BookingFlow, BookPage, etc.) is covered —
+     not just the scoped BookPage rule below. */
+  input, select, textarea { font-size: 16px !important; }
+
   /* ── BookPage booking flow (mobile) ──────────────────────────────────────
      Scoped to .page-content .booking-section so only the full-page BookPage
      steps are affected — the in-chat BookingFlow lives in .booking-flow and
@@ -707,6 +713,14 @@ body {
      feel appropriately sized. Font stays at 16px (rule above) to keep iOS from
      zooming, so the slimmer feel comes from the reduced padding. */
   .page-content .booking-date-row .input { padding: 0.5rem 0.6rem; }
+
+  /* Stack check-in / check-out vertically on mobile — the side-by-side grid
+     layout (set on .booking-date-row at desktop scope) is too cramped at
+     narrow widths. Each field expands to full width inside the flex column. */
+  .page-content .booking-section .booking-date-row {
+    display: flex;
+    flex-direction: column;
+  }
 
   /* The fixed chat FAB (.chat-toggle, bottom 1.5rem + 52px) sits over the
      bottom-right of the content column on mobile, covering the Next/Review
