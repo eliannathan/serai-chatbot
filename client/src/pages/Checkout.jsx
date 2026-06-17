@@ -129,6 +129,9 @@ export default function Checkout() {
               <Link to="/my-booking" className="btn-primary">View My Booking</Link>
               <Link to="/" className="btn-secondary">Back to Home</Link>
             </div>
+            <p className="checkout-demo-note">
+              🧪 Demo notice: this booking will be automatically removed after 45 minutes to keep the demo environment clean.
+            </p>
           </div>
         ) : cartCount === 0 ? (
           <div className="checkout-empty">
