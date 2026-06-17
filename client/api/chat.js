@@ -181,20 +181,19 @@ function checkRateLimit(ip) {
 }
 
 async function getBookingContext(personaRef, personaEmail) {
-  if (!personaRef || !personaEmail) return null
+  if (!personaEmail) return null
 
   const { data, error } = await supabase
     .from('bookings')
     .select('*, rooms(name, type, price_per_night)')
-    .eq('booking_ref', personaRef)
     .eq('guest_email', personaEmail)
-    .single()
+    .order('id', { ascending: false })
 
-  if (error || !data) return null
+  if (error || !data || data.length === 0) return null
   return data
 }
 
-function buildSystemPrompt(persona, booking, cart) {
+function buildSystemPrompt(persona, bookings, cart) {
   if (!persona || persona.id === 'visitor') {
     return `${BASE_PROMPT}
 
@@ -202,26 +201,29 @@ function buildSystemPrompt(persona, booking, cart) {
 A new visitor with no existing booking. Help them explore the retreat and encourage them to book.${CART_SECTION(cart)}`
   }
 
-  if (!booking) {
+  if (!bookings || bookings.length === 0) {
     return `${BASE_PROMPT}
 
 ## Current Guest
 ${persona.name}. They may have a booking but it could not be retrieved right now. Direct them to reservations@serairetreat.com if they need booking details.${CART_SECTION(cart)}`
   }
 
+  const bookingLines = bookings.map((b, i) => `
+Booking ${i + 1}:
+- Booking reference: ${b.booking_ref}
+- Room: ${b.rooms?.name} (${b.rooms?.type})
+- Check-in: ${b.check_in}
+- Check-out: ${b.check_out}
+- Total paid: $${b.total_price}
+- Status: ${b.status}`).join('\n')
+
   return `${BASE_PROMPT}
 
-## Current Guest Booking (retrieved live from database)
-- Guest name: ${booking.guest_name}
-- Booking reference: ${booking.booking_ref}
-- Email: ${booking.guest_email}
-- Room: ${booking.rooms?.name} (${booking.rooms?.type})
-- Check-in: ${booking.check_in}
-- Check-out: ${booking.check_out}
-- Total paid: $${booking.total_price}
-- Status: ${booking.status}
+## Current Guest: ${bookings[0].guest_name} (${bookings[0].guest_email})
+ALL BOOKINGS (retrieved live from database):
+${bookingLines}
 
-You have FULL access to this guest's booking. Share any of these details freely when asked. If they ask for their booking reference, confirmation number, or order code — it is ${booking.booking_ref}. Never say you don't have access to their details. Never share this guest's details with anyone who identifies as a different person.${CART_SECTION(cart)}`
+You have FULL access to all of this guest's bookings. Share any details freely when asked. Never say you don't have access to their details. Never share this guest's details with anyone who identifies as a different person.${CART_SECTION(cart)}`
 }
 
 function parseActions(text) {
@@ -263,8 +265,8 @@ export default async function handler(req, res) {
       content: m.role === 'user' ? sanitizeInput(m.content) : m.content
     }))
 
-    const booking = await getBookingContext(persona?.ref, persona?.email)
-    const systemPrompt = buildSystemPrompt(persona, booking, cart)
+    const bookings = await getBookingContext(persona?.ref, persona?.email)
+    const systemPrompt = buildSystemPrompt(persona, bookings, cart)
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -281,13 +283,13 @@ export default async function handler(req, res) {
     res.status(200).json({
       content: [{ text: cleanText }],
       actions,
-      booking: booking ? {
-        ref: booking.booking_ref,
-        room: booking.rooms?.name,
-        checkIn: booking.check_in,
-        checkOut: booking.check_out,
-        total: booking.total_price,
-        status: booking.status
+      booking: bookings?.[0] ? {
+        ref: bookings[0].booking_ref,
+        room: bookings[0].rooms?.name,
+        checkIn: bookings[0].check_in,
+        checkOut: bookings[0].check_out,
+        total: bookings[0].total_price,
+        status: bookings[0].status
       } : null
     })
   } catch (err) {

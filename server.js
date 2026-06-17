@@ -18,21 +18,15 @@ app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json())
 
 async function getBookingContext(personaRef, personaEmail) {
-  if (!personaRef || !personaEmail) return null
-
-  console.log('Fetching booking for:', personaRef, personaEmail)
+  if (!personaEmail) return null
 
   const { data, error } = await supabase
     .from('bookings')
     .select('*, rooms(name, type, price_per_night)')
-    .eq('booking_ref', personaRef)
     .eq('guest_email', personaEmail)
-    .single()
+    .order('id', { ascending: false })
 
-  console.log('Booking data:', data)
-  console.log('Booking error:', error)
-
-  if (error || !data) return null
+  if (error || !data || data.length === 0) return null
   return data
 }
 
@@ -48,7 +42,17 @@ Rooms available:
 
 Amenities: Balinese spa, farm-to-table dining, yoga pavilion, plunge pools, airport transfers.
 
-For new booking inquiries direct guests to hello@serai.retreat. Never make up information you don't know.`
+Never make up information you don't know.
+
+ACTIONS — append one of these tags at the END of your message when appropriate (never explain the tag):
+- [ACTION:START_BOOKING] — when guest wants to make a new booking or asks to book a room
+- [ACTION:SHOW_BOOKING] — when guest asks to see their existing booking details
+- [ACTION:GO_ROOMS] — when guest wants to browse or explore rooms
+- [ACTION:GO_AMENITIES] — when guest asks about amenities
+- [ACTION:GO_CHECKOUT] — when guest is ready to complete a purchase
+- [ACTION:CONTACT_TEAM] — only as a last resort if you truly cannot help
+
+For any new booking request, ALWAYS emit [ACTION:START_BOOKING] — never tell them to email.`
 
   if (!persona || persona.id === 'visitor') {
     return `${basePersonality}
@@ -56,26 +60,38 @@ For new booking inquiries direct guests to hello@serai.retreat. Never make up in
 CURRENT GUEST: New visitor with no existing booking. Help them explore the retreat and encourage them to book.`
   }
 
-  if (!booking) {
+  if (!booking || booking.length === 0) {
     return `${basePersonality}
 
 CURRENT GUEST: ${persona.name}. They may have a booking but it could not be retrieved right now. Be helpful and direct them to hello@serai.retreat if they need booking details.`
   }
 
+  const bookingLines = booking.map((b, i) => `
+Booking ${i + 1}:
+- Booking reference: ${b.booking_ref}
+- Room: ${b.rooms?.name} (${b.rooms?.type})
+- Check-in: ${b.check_in}
+- Check-out: ${b.check_out}
+- Total paid: $${b.total_price}
+- Status: ${b.status}
+- Special requests: ${b.special_requests || 'None'}`).join('\n')
+
   return `${basePersonality}
 
-CURRENT GUEST BOOKING (retrieved live from database):
-- Guest name: ${booking.guest_name}
-- Booking reference: ${booking.booking_ref}
-- Email: ${booking.guest_email}
-- Room: ${booking.rooms?.name} (${booking.rooms?.type})
-- Check-in: ${booking.check_in}
-- Check-out: ${booking.check_out}
-- Total paid: $${booking.total_price}
-- Status: ${booking.status}
-- Special requests: ${booking.special_requests || 'None'}
+CURRENT GUEST: ${booking[0].guest_name} (${booking[0].guest_email})
+ALL BOOKINGS (retrieved live from database):
+${bookingLines}
 
-You have FULL access to this guest's booking. Share any of these details freely when asked. If they ask for their booking reference, confirmation number, or order code — it is ${booking.booking_ref}. Never say you don't have access to their details.`
+You have FULL access to all of this guest's bookings. Share any details freely when asked. Never say you don't have access to their details.`
+}
+
+function parseActions(text) {
+  const actions = []
+  const cleaned = text.replace(/\[ACTION:([A-Z_]+)\]/g, (_, tag) => {
+    actions.push(tag)
+    return ''
+  }).trim()
+  return { cleaned, actions }
 }
 
 app.post('/api/chat', async (req, res) => {
@@ -110,8 +126,10 @@ app.post('/api/chat', async (req, res) => {
       ]
     })
 
+    const { cleaned, actions } = parseActions(response.choices[0].message.content)
     res.json({
-      content: [{ text: response.choices[0].message.content }]
+      content: [{ text: cleaned }],
+      actions
     })
   } catch (err) {
     console.error(err)
