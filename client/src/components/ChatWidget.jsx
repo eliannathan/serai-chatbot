@@ -35,20 +35,56 @@ function bubbleHTML(content) {
   }
 }
 
+// Splits message text on inline [label](ACTION:X) links so they can be rendered
+// as real clickable elements rather than raw markdown-looking text. Plain markdown
+// links and text without the ACTION: prefix are left untouched and fall through
+// to the normal text segment.
+const INLINE_ACTION_PATTERN = /\[([^\]]+)\]\(ACTION:([A-Z_]+)\)/g
+
+function parseMessageSegments(content) {
+  if (typeof content !== 'string') return []
+  const segments = []
+  let lastIndex = 0
+  let match
+  INLINE_ACTION_PATTERN.lastIndex = 0
+  while ((match = INLINE_ACTION_PATTERN.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', value: content.slice(lastIndex, match.index) })
+    }
+    segments.push({ type: 'action', label: match[1], action: match[2] })
+    lastIndex = INLINE_ACTION_PATTERN.lastIndex
+  }
+  if (lastIndex < content.length) {
+    segments.push({ type: 'text', value: content.slice(lastIndex) })
+  }
+  return segments
+}
+
 // ─── Subcomponents defined at module level ────────────────────────────────────
 // Keeping these outside ChatWidget means React sees stable component identities
 // between renders, so it never unmounts/remounts their DOM nodes. This preserves
 // textarea focus and avoids message-list flicker on every state change.
 
-function MessageList({ messages, loading, navigate, showBookingFlow, onStartBooking, bottomRef }) {
+function MessageList({ messages, loading, navigate, showBookingFlow, onStartBooking, onInlineAction, bottomRef }) {
   return (
     <>
       {messages.map((m, i) => (
         <div key={i} className={`chat-bubble-wrap ${m.role}`}>
-          <div
-            className={`chat-bubble ${m.role}`}
-            dangerouslySetInnerHTML={bubbleHTML(m.content)}
-          />
+          <div className={`chat-bubble ${m.role}`}>
+            {parseMessageSegments(m.content).map((seg, si) =>
+              seg.type === 'action' ? (
+                <button
+                  key={si}
+                  className="chat-inline-action-link"
+                  onClick={() => onInlineAction(seg.action)}
+                >
+                  {seg.label}
+                </button>
+              ) : (
+                <span key={si} dangerouslySetInnerHTML={bubbleHTML(seg.value)} />
+              )
+            )}
+          </div>
           {m.actions?.length > 0 && (
             <div className="chat-action-btns">
               {m.actions.map(a => (
@@ -360,6 +396,19 @@ export default function ChatWidget({ persona }) {
     setShowBookingFlow(false)
   }
 
+  // Handles clicks on inline [label](ACTION:X) links parsed out of message text —
+  // mirrors the trailing action-button behavior so both rendering paths agree.
+  function handleInlineAction(action) {
+    if (action === 'START_BOOKING') {
+      handleStartBooking()
+      return
+    }
+    const target = ACTION_MAP[action]
+    if (!target) return
+    if (target.path) navigate(target.path)
+    else if (target.email) window.location.href = `mailto:${target.email}`
+  }
+
   const quickReplies = persona?.room
     ? [
         { label: '📋 View my booking',    message: 'Can you pull up my booking details?' },
@@ -386,7 +435,7 @@ export default function ChatWidget({ persona }) {
   ]
 
   // Shared props bundles passed to the module-level subcomponents
-  const messageListProps = { messages, loading, navigate, showBookingFlow, onStartBooking: handleStartBooking, bottomRef }
+  const messageListProps = { messages, loading, navigate, showBookingFlow, onStartBooking: handleStartBooking, onInlineAction: handleInlineAction, bottomRef }
   const quickRepliesProps = { messages, quickReplies, handleQuickReply, loading }
   const inputRowProps = { input, setInput, handleKey, sendMessage, loading, isMobile }
   const bookingOverlayProps = {
